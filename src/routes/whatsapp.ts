@@ -3,7 +3,7 @@
  */
 
 import { Router } from "express";
-import { getQRCode, getStatus, logout } from "../controllers/whatsapp-controller";
+import { getQRCode, getStatus, sendMessage, logout } from "../controllers/whatsapp-controller";
 
 const router = Router();
 
@@ -16,6 +16,11 @@ router.get("/qr", getQRCode);
  * GET /whatsapp/status - Get WhatsApp connection status
  */
 router.get("/status", getStatus);
+
+/**
+ * POST /whatsapp/send - Send a message
+ */
+router.post("/send", sendMessage);
 
 /**
  * POST /whatsapp/logout - Logout from WhatsApp

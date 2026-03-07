@@ -66,3 +66,14 @@ export interface LogEntry {
   timestamp: string;
   [key: string]: unknown;
 }
+
+export interface SendMessageRequest {
+  to: string;
+  text: string;
+}
+
+export interface SendMessageResponse {
+  messageId: string;
+  timestamp: string;
+  to: string;
+}
