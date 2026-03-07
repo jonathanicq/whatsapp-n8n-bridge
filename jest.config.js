@@ -4,11 +4,12 @@ module.exports = {
   roots: ["<rootDir>/tests", "<rootDir>/src"],
   testMatch: ["**/__tests__/**/*.ts", "**/?(*.)+(spec|test).ts"],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+  transformIgnorePatterns: ["node_modules/(?!(uuid)/)"],
   collectCoverageFrom: [
     "src/**/*.ts",
     "!src/**/*.d.ts",
     "!src/**/index.ts",
-    "!src/**/*.interface.ts"
+    "!src/**/*.interface.ts",
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],
@@ -17,9 +18,9 @@ module.exports = {
       branches: 80,
       functions: 80,
       lines: 80,
-      statements: 80
-    }
+      statements: 80,
+    },
   },
   testTimeout: 10000,
-  verbose: true
+  verbose: true,
 };

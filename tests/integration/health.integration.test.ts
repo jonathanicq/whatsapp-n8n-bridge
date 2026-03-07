@@ -32,9 +32,7 @@ describe("Health Endpoints Integration Tests", () => {
 
   describe("GET /health", () => {
     it("should return 200 with healthy status when all services are up", async () => {
-      const response = await (app as any)
-        ._testRequest("GET", "/health")
-        .expect(200);
+      const response = await (app as any)._testRequest("GET", "/health").expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.status).toBe("healthy");
@@ -50,18 +48,14 @@ describe("Health Endpoints Integration Tests", () => {
       });
       jest.mocked(redis.checkRedisStatus).mockResolvedValue(false);
 
-      const response = await (app as any)
-        ._testRequest("GET", "/health")
-        .expect(503);
+      const response = await (app as any)._testRequest("GET", "/health").expect(503);
 
       expect(response.body.success).toBe(false);
       expect(response.body.data.status).toBe("unhealthy");
     });
 
     it("should return valid timestamp", async () => {
-      const response = await (app as any)
-        ._testRequest("GET", "/health")
-        .expect(200);
+      const response = await (app as any)._testRequest("GET", "/health").expect(200);
 
       expect(response.body.data.timestamp).toBeDefined();
       expect(() => new Date(response.body.data.timestamp)).not.toThrow();
@@ -70,9 +64,7 @@ describe("Health Endpoints Integration Tests", () => {
 
   describe("GET /health/metrics", () => {
     it("should return 200 with metrics data", async () => {
-      const response = await (app as any)
-        ._testRequest("GET", "/health/metrics")
-        .expect(200);
+      const response = await (app as any)._testRequest("GET", "/health/metrics").expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
@@ -82,9 +74,7 @@ describe("Health Endpoints Integration Tests", () => {
     });
 
     it("should return memory usage data", async () => {
-      const response = await (app as any)
-        ._testRequest("GET", "/health/metrics")
-        .expect(200);
+      const response = await (app as any)._testRequest("GET", "/health/metrics").expect(200);
 
       const metrics = response.body.data;
       expect(metrics.memory.heapUsed).toBeGreaterThanOrEqual(0);
@@ -94,9 +84,7 @@ describe("Health Endpoints Integration Tests", () => {
 
   describe("404 Not Found", () => {
     it("should return 404 for non-existent route", async () => {
-      const response = await (app as any)
-        ._testRequest("GET", "/nonexistent")
-        .expect(404);
+      const response = await (app as any)._testRequest("GET", "/nonexistent").expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBeDefined();

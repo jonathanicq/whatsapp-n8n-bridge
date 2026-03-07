@@ -74,9 +74,7 @@ describe("Health Service", () => {
     });
 
     it("should handle errors gracefully", async () => {
-      jest
-        .mocked(database.getPoolStatus)
-        .mockRejectedValue(new Error("Database error"));
+      jest.mocked(database.getPoolStatus).mockRejectedValue(new Error("Database error"));
       jest.mocked(redis.checkRedisStatus).mockResolvedValue(false);
 
       const health = await getHealthStatus();
