@@ -83,7 +83,7 @@ export async function updateSessionStatus(
   sessionName: string,
   isConnected: boolean,
   isAuthenticated: boolean,
-  phoneNumber?: string
+  phoneNumber?: string,
 ): Promise<void> {
   const session = await loadSession(sessionName);
 

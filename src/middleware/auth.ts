@@ -22,11 +22,7 @@ declare global {
  * API Key authentication middleware (stub)
  * To be implemented in Phase 3
  */
-export function authMiddleware(
-  req: Request,
-  _res: Response,
-  next: NextFunction
-): void {
+export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
   // Get API key from header
   const apiKey = req.headers["x-api-key"] as string | undefined;
 
@@ -48,17 +44,9 @@ export function authMiddleware(
 /**
  * Require API key authentication
  */
-export function requireAuth(
-  req: Request,
-  _res: Response,
-  next: NextFunction
-): void {
+export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
   if (!req.apiKey) {
-    throw new AppError(
-      HTTP_CODES.UNAUTHORIZED,
-      "API key required",
-      API_ERRORS.INVALID_REQUEST
-    );
+    throw new AppError(HTTP_CODES.UNAUTHORIZED, "API key required", API_ERRORS.INVALID_REQUEST);
   }
 
   // TODO: Validate API key against database in Phase 3

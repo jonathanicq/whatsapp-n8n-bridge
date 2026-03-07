@@ -74,7 +74,7 @@ function getMessageType(message: Record<string, unknown>): MessageType {
  */
 function extractMessageContent(
   message: Record<string, unknown>,
-  type: MessageType
+  type: MessageType,
 ): ParsedMessage["content"] {
   const content: ParsedMessage["content"] = {
     media: {
@@ -83,43 +83,43 @@ function extractMessageContent(
   };
 
   switch (type) {
-    case "text": {
-      const text =
+  case "text": {
+    const text =
         (message.conversation as string) ||
         ((message.extendedTextMessage as Record<string, unknown>)?.text as string) ||
         "";
-      content.text = text;
-      break;
-    }
+    content.text = text;
+    break;
+  }
 
-    case "image": {
-      const imageMsg = message.imageMessage as Record<string, unknown>;
-      if (imageMsg) {
-        content.caption = imageMsg.caption as string;
+  case "image": {
+    const imageMsg = message.imageMessage as Record<string, unknown>;
+    if (imageMsg) {
+      content.caption = imageMsg.caption as string;
         content.media!.mimeType = imageMsg.mimetype as string;
-      }
-      break;
     }
+    break;
+  }
 
-    case "audio": {
-      const audioMsg = message.audioMessage as Record<string, unknown>;
-      if (audioMsg) {
+  case "audio": {
+    const audioMsg = message.audioMessage as Record<string, unknown>;
+    if (audioMsg) {
         content.media!.mimeType = audioMsg.mimetype as string;
-      }
-      break;
     }
+    break;
+  }
 
-    case "document": {
-      const docMsg = message.documentMessage as Record<string, unknown>;
-      if (docMsg) {
+  case "document": {
+    const docMsg = message.documentMessage as Record<string, unknown>;
+    if (docMsg) {
         content.media!.mimeType = docMsg.mimetype as string;
         content.media!.url = docMsg.url as string;
-      }
-      break;
     }
+    break;
+  }
 
-    default:
-      break;
+  default:
+    break;
   }
 
   return content;

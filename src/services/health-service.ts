@@ -25,9 +25,7 @@ export async function getHealthStatus(): Promise<HealthStatus> {
     // Determine overall health status
     let status: HealthStatus["status"] = HEALTH_STATUS.HEALTHY;
     if (!dbHealthy || !redisHealthy) {
-      status = !dbHealthy || !redisHealthy
-        ? HEALTH_STATUS.UNHEALTHY
-        : HEALTH_STATUS.DEGRADED;
+      status = !dbHealthy || !redisHealthy ? HEALTH_STATUS.UNHEALTHY : HEALTH_STATUS.DEGRADED;
     }
 
     const healthStatus: HealthStatus = {

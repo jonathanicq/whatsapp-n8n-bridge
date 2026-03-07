@@ -44,7 +44,8 @@ async function start(): Promise<void> {
     logInfo("WhatsApp service initialized");
 
     // Subscribe to WhatsApp events
-    whatsAppService.on("message", (message: WhatsAppMessage) => {
+    whatsAppService.on("message", (data: unknown) => {
+      const message = data as WhatsAppMessage;
       logInfo("WhatsApp message received", {
         sender: message.sender,
         messageId: message.messageId,

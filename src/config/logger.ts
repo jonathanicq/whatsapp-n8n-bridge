@@ -21,7 +21,7 @@ export function initLogger(): Logger {
     new winston.transports.Console({
       format: format.combine(
         format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-        config.logFormat === "json" ? format.json() : format.simple()
+        config.logFormat === "json" ? format.json() : format.simple(),
       ),
     }),
   ];
@@ -32,18 +32,12 @@ export function initLogger(): Logger {
       new winston.transports.File({
         filename: `${config.logDir}/error.log`,
         level: "error",
-        format: format.combine(
-          format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-          format.json()
-        ),
+        format: format.combine(format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }), format.json()),
       }),
       new winston.transports.File({
         filename: `${config.logDir}/combined.log`,
-        format: format.combine(
-          format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-          format.json()
-        ),
-      })
+        format: format.combine(format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }), format.json()),
+      }),
     );
   }
 
@@ -52,7 +46,7 @@ export function initLogger(): Logger {
     format: format.combine(
       format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
       format.errors({ stack: true }),
-      config.logFormat === "json" ? format.json() : format.simple()
+      config.logFormat === "json" ? format.json() : format.simple(),
     ),
     defaultMeta: { service: "whatsapp-bridge" },
     transports,
@@ -84,7 +78,7 @@ export function logInfo(message: string, meta?: Record<string, unknown>): void {
 export function logError(
   message: string,
   error?: Error | unknown,
-  meta?: Record<string, unknown>
+  meta?: Record<string, unknown>,
 ): void {
   getLogger().error(message, {
     ...meta,
@@ -103,9 +97,6 @@ export function logWarn(message: string, meta?: Record<string, unknown>): void {
 /**
  * Log debug message
  */
-export function logDebug(
-  message: string,
-  meta?: Record<string, unknown>
-): void {
+export function logDebug(message: string, meta?: Record<string, unknown>): void {
   getLogger().debug(message, meta);
 }

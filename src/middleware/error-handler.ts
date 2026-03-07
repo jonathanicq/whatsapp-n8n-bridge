@@ -14,7 +14,7 @@ export class AppError extends Error {
   constructor(
     public statusCode: number,
     message: string,
-    public code: string = API_ERRORS.INTERNAL_ERROR
+    public code: string = API_ERRORS.INTERNAL_ERROR,
   ) {
     super(message);
     Error.captureStackTrace(this, this.constructor);
@@ -28,7 +28,7 @@ export function errorHandler(
   error: unknown,
   _req: Request,
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
 ): void {
   let statusCode: number = HTTP_CODES.INTERNAL_SERVER_ERROR;
   let message: string = API_MESSAGES.SERVER_ERROR;
@@ -74,11 +74,7 @@ export function errorHandler(
 /**
  * Not found handler middleware
  */
-export function notFoundHandler(
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-): void {
+export function notFoundHandler(_req: Request, res: Response, _next: NextFunction): void {
   const response: ApiResponse<null> = {
     success: false,
     error: {

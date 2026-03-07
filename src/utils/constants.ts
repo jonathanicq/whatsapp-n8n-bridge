@@ -58,13 +58,7 @@ export const DEFAULT_LOG_LEVEL = "info";
 export const DEFAULT_LOG_FORMAT = "json";
 export const DEFAULT_REDIS_DB = 0;
 
-export const REQUIRED_ENV_VARS = [
-  "DB_HOST",
-  "DB_USER",
-  "DB_PASSWORD",
-  "DB_NAME",
-  "REDIS_HOST",
-];
+export const REQUIRED_ENV_VARS = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME", "REDIS_HOST"];
 
 export const OPTIONAL_ENV_VARS = {
   PORT: DEFAULT_PORT,

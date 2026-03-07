@@ -24,9 +24,7 @@ export function loadConfig(): AppConfig {
   // Validate required environment variables
   const missingVars = REQUIRED_ENV_VARS.filter((envVar) => !process.env[envVar]);
   if (missingVars.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missingVars.join(", ")}`
-    );
+    throw new Error(`Missing required environment variables: ${missingVars.join(", ")}`);
   }
 
   const config: AppConfig = {

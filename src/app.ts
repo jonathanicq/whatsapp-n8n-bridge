@@ -6,10 +6,7 @@ import express, { Express } from "express";
 import { corsMiddleware } from "./middleware/cors";
 import { loggingMiddleware } from "./middleware/logging";
 import { authMiddleware } from "./middleware/auth";
-import {
-  errorHandler,
-  notFoundHandler,
-} from "./middleware/error-handler";
+import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import routes from "./routes";
 import { logInfo } from "./config/logger";
 

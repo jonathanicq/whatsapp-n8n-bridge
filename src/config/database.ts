@@ -80,7 +80,7 @@ export async function getConnection(): Promise<PoolConnection> {
  */
 export async function query<T = unknown>(
   sql: string,
-  values?: (string | number | boolean | null)[]
+  values?: (string | number | boolean | null)[],
 ): Promise<T> {
   const connection = await getConnection();
 

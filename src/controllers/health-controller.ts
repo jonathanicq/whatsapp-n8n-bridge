@@ -10,10 +10,7 @@ import { ApiResponse } from "../utils/types";
 /**
  * GET /health - Health check endpoint
  */
-export async function getHealth(
-  _req: Request,
-  res: Response<ApiResponse<unknown>>
-): Promise<void> {
+export async function getHealth(_req: Request, res: Response<ApiResponse<unknown>>): Promise<void> {
   try {
     const health = await getHealthStatus();
     const statusCode = health.status === "healthy" ? 200 : 503;
@@ -43,7 +40,7 @@ export async function getHealth(
  */
 export async function getMetricsEndpoint(
   _req: Request,
-  res: Response<ApiResponse<unknown>>
+  res: Response<ApiResponse<unknown>>,
 ): Promise<void> {
   try {
     const metrics = getMetrics();

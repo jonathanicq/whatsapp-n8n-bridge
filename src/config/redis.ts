@@ -81,11 +81,7 @@ export function getRedisClient(): RedisClientType {
 /**
  * Set a key-value pair
  */
-export async function setRedisValue(
-  key: string,
-  value: string,
-  ttl?: number
-): Promise<void> {
+export async function setRedisValue(key: string, value: string, ttl?: number): Promise<void> {
   const redisClient = getRedisClient();
 
   try {

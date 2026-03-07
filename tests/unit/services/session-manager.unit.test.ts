@@ -2,10 +2,7 @@
  * Session manager unit tests
  */
 
-import {
-  createSession,
-  updateSessionStatus,
-} from "../../../src/services/session-manager";
+import { createSession, updateSessionStatus } from "../../../src/services/session-manager";
 
 jest.mock("../../../src/config/redis", () => ({
   setRedisValue: jest.fn().mockResolvedValue(undefined),
@@ -52,14 +49,13 @@ describe("Session Manager", () => {
       const { getRedisValue } = require("../../../src/config/redis");
       getRedisValue.mockResolvedValueOnce(null);
 
-      await expect(
-        updateSessionStatus("nonexistent", true, true),
-      ).rejects.toThrow("Session not found: nonexistent");
+      await expect(updateSessionStatus("nonexistent", true, true)).rejects.toThrow(
+        "Session not found: nonexistent"
+      );
     });
 
     it("should update session status and phone number", async () => {
-      const { getRedisValue, setRedisValue } =
-        require("../../../src/config/redis");
+      const { getRedisValue, setRedisValue } = require("../../../src/config/redis");
 
       const existingSession = {
         sessionName: "test-session",
@@ -70,12 +66,7 @@ describe("Session Manager", () => {
 
       getRedisValue.mockResolvedValueOnce(JSON.stringify(existingSession));
 
-      await updateSessionStatus(
-        "test-session",
-        true,
-        true,
-        "1234567890",
-      );
+      await updateSessionStatus("test-session", true, true, "1234567890");
 
       expect(setRedisValue).toHaveBeenCalled();
       const savedData = JSON.parse(setRedisValue.mock.calls[0][1]);

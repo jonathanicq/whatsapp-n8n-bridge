@@ -8,11 +8,7 @@ import { logInfo } from "../config/logger";
 /**
  * Logging middleware - logs all HTTP requests and responses
  */
-export function loggingMiddleware(
-  _req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function loggingMiddleware(_req: Request, res: Response, next: NextFunction): void {
   const start = Date.now();
   const { method, path, query, body } = _req;
 
