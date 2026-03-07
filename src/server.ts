@@ -7,6 +7,8 @@ import { getConfig } from "./config/environment";
 import { initLogger, logInfo, logError } from "./config/logger";
 import { initDatabase, closeDatabase } from "./config/database";
 import { initRedis, closeRedis } from "./config/redis";
+import { getWhatsAppService } from "./services/whatsapp-service";
+import { WhatsAppMessage } from "./models/whatsapp-message";
 
 let server: any = null;
 
@@ -35,6 +37,38 @@ async function start(): Promise<void> {
     // Initialize Redis
     await initRedis();
     logInfo("Redis initialized");
+
+    // Initialize WhatsApp service
+    const whatsAppService = getWhatsAppService();
+    await whatsAppService.initialize();
+    logInfo("WhatsApp service initialized");
+
+    // Subscribe to WhatsApp events
+    whatsAppService.on("message", (message: WhatsAppMessage) => {
+      logInfo("WhatsApp message received", {
+        sender: message.sender,
+        messageId: message.messageId,
+        type: message.type,
+      });
+      // TODO: Emit to n8n or trigger workflow
+    });
+
+    whatsAppService.on("qr", () => {
+      logInfo("WhatsApp QR code generated");
+      // TODO: Store in cache or emit to frontend
+    });
+
+    whatsAppService.on("connected", () => {
+      logInfo("WhatsApp connected");
+    });
+
+    whatsAppService.on("logout", () => {
+      logInfo("WhatsApp logged out");
+    });
+
+    whatsAppService.on("reconnect_failed", () => {
+      logError("WhatsApp reconnection failed");
+    });
 
     // Create Express app
     const app = createApp();
@@ -87,6 +121,11 @@ async function shutdown(): Promise<void> {
         });
       });
     }
+
+    // Disconnect WhatsApp service
+    const whatsAppService = getWhatsAppService();
+    await whatsAppService.disconnect();
+    logInfo("WhatsApp service disconnected");
 
     // Close database
     await closeDatabase();
