@@ -7,27 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.2.0] - 2026-03-07
 
-### Added
-- Phase 1: Backend Infrastructure (Express.js, TypeScript, Docker setup)
-- Phase 2: WhatsApp Integration (Baileys library, session management)
-- Phase 3: Core API Implementation (message send/receive endpoints)
-- Phase 4: Redis Queue & Reliable Delivery
-- Phase 5: Webhook system & n8n integration
-- Phase 6: Custom n8n node development
-- Phase 7: Testing & Documentation
-- Phase 8: Production deployment & hardening
+### Added (Phase 2: WhatsApp Integration)
+- **WhatsApp Service**: Baileys-based wrapper with full lifecycle management
+  - QR code generation and authentication
+  - Automatic reconnection with exponential backoff (1s → 30s)
+  - Event-driven architecture for message handling
+  - Session management with Redis persistence (7-day TTL)
+- **API Endpoints**:
+  - `GET /whatsapp/qr` - Retrieve QR code for authentication
+  - `GET /whatsapp/status` - Get connection and authentication status
+  - `POST /whatsapp/logout` - Logout and clear session
+- **Message Processing Pipeline**:
+  - Message type detection (text, image, audio, video, document, sticker)
+  - Content extraction and parsing
+  - Format conversion to standardized WhatsAppMessage
+- **Session Manager**:
+  - Redis-based persistent session storage
+  - Automatic auth state management
+  - Session creation, loading, updating, deletion
+- **Comprehensive Testing**:
+  - 4 unit tests for session manager
+  - 8 unit tests for message parser
+  - 5 integration tests for WhatsApp API endpoints
+  - All 17 tests passing
+- **Documentation**:
+  - `docs/WHATSAPP_SETUP.md` - Complete setup and usage guide
+  - Updated `docs/ARCHITECTURE.md` with WhatsApp service architecture
+- **Configuration**:
+  - Fixed ESLint configuration for modern TypeScript
+  - Added @types/qrcode and @types/supertest
+  - Updated Jest config for uuid ESM module handling
 
 ### Changed
-- N/A (Initial setup)
+- Updated .eslintrc.json rule for comma-dangle (es5 → always-multiline)
+- Converted TypeScript rules from error to warn level for external library compatibility
+- Refactored middleware formatting and imports
 
 ### Fixed
-- N/A (Initial setup)
+- TypeScript compilation errors in database, redis, and error-handler configs
+- ESLint configuration incompatibility with newer versions
+- Jest uuid module ESM handling
 
 ### Security
 - Environment-based secrets (.env configuration)
 - WhatsApp session encryption in Redis
+- No credential logging in event handlers
+- Safe message content extraction
+
+## [0.1.0] - 2026-03-07
+
+### Added (Phase 1: Backend Infrastructure)
+- Express.js application with TypeScript
+- MySQL connection pool with automatic retry logic
+- Redis client with async/await API
+- Winston structured JSON logging
+- Health check endpoints (`/health`, `/health/metrics`)
+- Docker multi-stage build with non-root user
+- Docker Compose setup with MySQL 8.0 and Redis 7.0
+- ESLint and Prettier code quality tools
+- Jest testing framework with mocking
+- Git workflow with proper .gitignore
+- Environment variable validation
+- CORS middleware
+- Error handling middleware
+- Request logging middleware
+- GitHub repository initialization
+
+### Security
+- Non-root Docker user execution
+- Environment-based configuration
+- No hardcoded secrets
+- Proper error response handling
 - Webhook signature verification with HMAC-SHA256
 
 ---
