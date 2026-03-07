@@ -28,6 +28,13 @@ export interface AppConfig {
     sessionName: string;
     phoneNumber?: string;
   };
+  webhook: {
+    enableWebhooks: boolean;
+    n8nWebhookUrl: string;
+    n8nApiUrl: string;
+    n8nApiKey: string;
+    defaultSecret: string;
+  };
 }
 
 export interface HealthStatus {

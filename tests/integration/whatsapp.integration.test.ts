@@ -30,11 +30,15 @@ jest.mock("../../src/config/database");
 jest.mock("../../src/config/redis");
 jest.mock("../../src/config/logger");
 
+import { Pool } from "mysql2/promise";
+
 describe("WhatsApp Integration Tests", () => {
   let app: ReturnType<typeof createApp>;
+  let mockPool: Pool;
 
   beforeAll(() => {
-    app = createApp();
+    mockPool = {} as Pool;
+    app = createApp(mockPool);
   });
 
   beforeEach(() => {

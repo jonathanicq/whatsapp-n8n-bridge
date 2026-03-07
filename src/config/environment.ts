@@ -53,6 +53,13 @@ export function loadConfig(): AppConfig {
       sessionName: process.env.WA_SESSION_NAME || "whatsapp-bridge",
       phoneNumber: process.env.WA_PHONE_NUMBER,
     },
+    webhook: {
+      enableWebhooks: process.env.ENABLE_WEBHOOKS === "true",
+      n8nWebhookUrl: process.env.N8N_WEBHOOK_URL || "",
+      n8nApiUrl: process.env.N8N_API_URL || "",
+      n8nApiKey: process.env.N8N_API_KEY || "",
+      defaultSecret: process.env.WEBHOOK_SECRET || "",
+    },
   };
 
   // Validate parsed values

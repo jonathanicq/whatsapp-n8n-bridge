@@ -12,9 +12,15 @@ import { WhatsAppMessage } from "./models/whatsapp-message";
 import { QueueWorkerService } from "./services/queue-worker";
 import { RedisQueueManager } from "./services/queue-manager";
 import { MessageRepository } from "./services/message-repository";
+import { WebhookDispatcher } from "./services/webhook-dispatcher";
+import { WebhookQueueWorker } from "./services/webhook-queue-worker";
+import { WebhookRepository } from "./services/webhook-repository";
+import { IncomingMessage } from "./models/webhook";
 
 let server: any = null;
 let queueWorker: QueueWorkerService | null = null;
+let webhookDispatcher: WebhookDispatcher | null = null;
+let webhookQueueWorker: WebhookQueueWorker | null = null;
 
 /**
  * Start the server
@@ -56,6 +62,38 @@ async function start(): Promise<void> {
     await queueWorker.start();
     logInfo("Queue worker started");
 
+    // Initialize webhook dispatcher and worker (Phase 5)
+    if (config.webhook.enableWebhooks) {
+      webhookDispatcher = new WebhookDispatcher(pool, redis);
+      webhookQueueWorker = new WebhookQueueWorker(pool, redis);
+      webhookQueueWorker.start();
+      logInfo("Webhook dispatcher and queue worker initialized");
+
+      // Bootstrap n8n webhook if configured
+      if (config.webhook.n8nWebhookUrl) {
+        try {
+          const webhookRepo = new WebhookRepository(pool);
+          const existing = await webhookRepo.getWebhookByUrl(
+            config.webhook.n8nWebhookUrl
+          );
+          if (!existing) {
+            await webhookRepo.createWebhook(
+              "n8n Auto-registered",
+              config.webhook.n8nWebhookUrl,
+              config.webhook.defaultSecret || ""
+            );
+            logInfo("n8n webhook auto-bootstrapped", {
+              url: config.webhook.n8nWebhookUrl,
+            });
+          }
+        } catch (error) {
+          logError("Failed to auto-bootstrap n8n webhook", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    }
+
     // Subscribe to WhatsApp events
     whatsAppService.on("message", (data: unknown) => {
       const message = data as WhatsAppMessage;
@@ -64,7 +102,25 @@ async function start(): Promise<void> {
         messageId: message.messageId,
         type: message.type,
       });
-      // TODO: Emit to n8n or trigger workflow
+
+      // Dispatch to webhooks (Phase 5)
+      if (webhookDispatcher && config.webhook.enableWebhooks) {
+        const incomingMessage: IncomingMessage = {
+          messageId: message.messageId,
+          sender: message.sender,
+          timestamp: Math.floor(Date.now() / 1000), // Unix timestamp
+          type: message.type || "text",
+          text: message.text,
+          isGroup: message.isGroup || false,
+          fromMe: message.fromMe || false,
+          status: "received",
+        };
+        webhookDispatcher.dispatch(incomingMessage).catch((error) => {
+          logError("Failed to dispatch webhook", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+      }
     });
 
     whatsAppService.on("qr", () => {
@@ -85,7 +141,7 @@ async function start(): Promise<void> {
     });
 
     // Create Express app
-    const app = createApp();
+    const app = createApp(pool);
 
     // Start HTTP server
     server = app.listen(config.port, () => {
@@ -126,6 +182,12 @@ async function shutdown(): Promise<void> {
     if (queueWorker) {
       await queueWorker.stop();
       logInfo("Queue worker stopped");
+    }
+
+    // Stop webhook queue worker
+    if (webhookQueueWorker) {
+      webhookQueueWorker.stop();
+      logInfo("Webhook queue worker stopped");
     }
 
     // Close HTTP server

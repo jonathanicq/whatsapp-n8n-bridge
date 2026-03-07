@@ -27,15 +27,18 @@ jest.mock("../../src/services/whatsapp-service", () => ({
 
 import { createApp } from "../../src/app";
 import { Express } from "express";
+import { Pool } from "mysql2/promise";
 
 import * as database from "../../src/config/database";
 import * as redis from "../../src/config/redis";
 
 describe("Health Endpoints Integration Tests", () => {
   let app: Express;
+  let mockPool: Pool;
 
   beforeAll(() => {
-    app = createApp();
+    mockPool = {} as Pool;
+    app = createApp(mockPool);
   });
 
   beforeEach(() => {

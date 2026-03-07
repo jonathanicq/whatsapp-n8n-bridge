@@ -3,17 +3,18 @@
  */
 
 import express, { Express } from "express";
+import { Pool } from "mysql2/promise";
 import { corsMiddleware } from "./middleware/cors";
 import { loggingMiddleware } from "./middleware/logging";
 import { authMiddleware } from "./middleware/auth";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
-import routes from "./routes";
+import { createRouter } from "./routes";
 import { logInfo } from "./config/logger";
 
 /**
  * Create and configure Express application
  */
-export function createApp(): Express {
+export function createApp(pool: Pool): Express {
   const app = express();
 
   // Middleware: Body parsing
@@ -30,7 +31,7 @@ export function createApp(): Express {
   app.use(authMiddleware);
 
   // Routes
-  app.use(routes);
+  app.use(createRouter(pool));
 
   // 404 handler
   app.use(notFoundHandler);

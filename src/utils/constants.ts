@@ -75,6 +75,26 @@ export const DEFAULT_REDIS_DB = 0;
 
 export const REQUIRED_ENV_VARS = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME", "REDIS_HOST"];
 
+export const WEBHOOK_CONFIG = {
+  QUEUE_KEY: "webhook:queue:deliveries",
+  PAYLOAD_KEY_PREFIX: "webhook:payload:",
+  PROCESSING_SET_KEY: "webhook:queue:processing",
+  RETRY_DELAYS: [1000, 2000, 5000, 10000, 30000], // ms
+  MAX_RETRIES: 5,
+  REQUEST_TIMEOUT: 10000, // 10 seconds
+  PAYLOAD_TTL: 86400, // 24 hours in seconds
+} as const;
+
+export const WEBHOOK_ERRORS = {
+  WEBHOOK_NOT_FOUND: "WEBHOOK_NOT_FOUND",
+  INVALID_URL: "INVALID_URL",
+  INVALID_WEBHOOK_DATA: "INVALID_WEBHOOK_DATA",
+  DELIVERY_FAILED: "DELIVERY_FAILED",
+  WEBHOOK_TIMEOUT: "WEBHOOK_TIMEOUT",
+  WEBHOOK_ERROR: "WEBHOOK_ERROR",
+  DUPLICATE_WEBHOOK_URL: "DUPLICATE_WEBHOOK_URL",
+} as const;
+
 export const OPTIONAL_ENV_VARS = {
   PORT: DEFAULT_PORT,
   NODE_ENV: "development",
@@ -89,4 +109,9 @@ export const OPTIONAL_ENV_VARS = {
   REDIS_PASSWORD: "",
   REDIS_DB: DEFAULT_REDIS_DB,
   WA_SESSION_NAME: "whatsapp-bridge",
+  ENABLE_WEBHOOKS: false,
+  N8N_WEBHOOK_URL: "",
+  N8N_API_URL: "",
+  N8N_API_KEY: "",
+  WEBHOOK_SECRET: "",
 };
