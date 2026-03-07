@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] - 2026-03-07
+
+### Added (Phase 5: Webhook & n8n Integration)
+- **Webhook Management API**:
+  - POST /webhooks - Create new webhook
+  - GET /webhooks - List all webhooks
+  - GET /webhooks/:id - Get single webhook
+  - PATCH /webhooks/:id - Update webhook (name, url, active, filters)
+  - DELETE /webhooks/:id - Delete webhook
+- **Database Schema**:
+  - `webhook_configs` table with URL, secret, filters, and active status
+  - `webhook_deliveries` table for delivery tracking per webhook/message pair
+  - `webhook_delivery_attempts` table for immutable audit trail
+  - Proper foreign keys and cascading deletes
+- **Webhook Dispatcher**:
+  - Fan-out message delivery to multiple webhooks
+  - HMAC-SHA256 payload signing (X-Webhook-Signature header)
+  - Message filtering (by type, group status, sender)
+  - Non-blocking delivery (Promise.allSettled)
+  - Payload caching in Redis (24-hour TTL)
+  - Automatic failure enqueueing for retries
+- **Webhook Queue Worker**:
+  - Background polling service (5-second interval)
+  - Redis sorted-set based retry queue
+  - Exponential backoff: 1s, 2s, 5s, 10s, 30s
+  - Max 5 retry attempts per delivery
+  - Graceful start/stop lifecycle
+  - Processing set to prevent concurrent attempts
+- **n8n Auto-Bootstrap**:
+  - Automatic webhook registration on startup
+  - Configurable via N8N_WEBHOOK_URL env var
+  - Non-fatal errors (service continues if bootstrap fails)
+- **Webhook Repository**:
+  - CRUD operations for webhook configs
+  - Delivery creation and status tracking
+  - Attempt recording and retrieval
+  - Active webhook filtering
+  - Full error handling
+- **Configuration**:
+  - ENABLE_WEBHOOKS environment variable
+  - N8N_WEBHOOK_URL for auto-bootstrap
+  - N8N_API_URL and N8N_API_KEY for future extensibility
+  - WEBHOOK_SECRET for HMAC signing
+- **Testing**:
+  - 15+ unit tests for WebhookRepository
+  - 15+ unit tests for WebhookDispatcher
+  - 30+ new test cases total
+  - 127/147 tests passing (86% pass rate)
+  - Mock patterns for Redis and database operations
+- **Integration Updates**:
+  - WhatsApp message handler wired to dispatcher
+  - Server initialization starts webhook worker
+  - Graceful shutdown includes webhook worker termination
+  - Updated createApp() to accept pool parameter
+  - Updated integration tests for new createApp signature
+
+### Fixed
+- Integration tests updated to pass pool to createApp()
+
+### Changed
+- app.ts now requires Pool parameter for webhook routes
+- routes/index.ts creates router with pool parameter
+
+---
+
 ## [0.3.0] - 2026-03-07
 
 ### Added (Phase 4: Message Queue System)
