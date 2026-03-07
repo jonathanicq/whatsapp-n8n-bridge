@@ -2,6 +2,10 @@
  * WhatsApp send message integration tests
  */
 
+jest.mock("uuid", () => ({
+  v4: jest.fn(() => "uuid-test-123-456"),
+}));
+
 import request from "supertest";
 import { createApp } from "../../src/app";
 

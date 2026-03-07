@@ -5,12 +5,16 @@
 import { createApp } from "./app";
 import { getConfig } from "./config/environment";
 import { initLogger, logInfo, logError } from "./config/logger";
-import { initDatabase, closeDatabase } from "./config/database";
-import { initRedis, closeRedis } from "./config/redis";
+import { initDatabase, closeDatabase, getPool } from "./config/database";
+import { initRedis, closeRedis, getRedis } from "./config/redis";
 import { getWhatsAppService } from "./services/whatsapp-service";
 import { WhatsAppMessage } from "./models/whatsapp-message";
+import { QueueWorkerService } from "./services/queue-worker";
+import { RedisQueueManager } from "./services/queue-manager";
+import { MessageRepository } from "./services/message-repository";
 
 let server: any = null;
+let queueWorker: QueueWorkerService | null = null;
 
 /**
  * Start the server
@@ -42,6 +46,15 @@ async function start(): Promise<void> {
     const whatsAppService = getWhatsAppService();
     await whatsAppService.initialize();
     logInfo("WhatsApp service initialized");
+
+    // Initialize queue worker
+    const pool = getPool();
+    const redis = getRedis();
+    const messageRepository = new MessageRepository(pool);
+    const queueManager = new RedisQueueManager(redis);
+    queueWorker = new QueueWorkerService(queueManager, messageRepository);
+    await queueWorker.start();
+    logInfo("Queue worker started");
 
     // Subscribe to WhatsApp events
     whatsAppService.on("message", (data: unknown) => {
@@ -109,6 +122,12 @@ async function shutdown(): Promise<void> {
   logInfo("Shutting down server...");
 
   try {
+    // Stop queue worker
+    if (queueWorker) {
+      await queueWorker.stop();
+      logInfo("Queue worker stopped");
+    }
+
     // Close HTTP server
     if (server) {
       await new Promise<void>((resolve, reject) => {

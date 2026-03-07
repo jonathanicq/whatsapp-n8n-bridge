@@ -56,6 +56,16 @@ export async function initDatabase(): Promise<Pool> {
 }
 
 /**
+ * Get the connection pool instance
+ */
+export function getPool(): Pool {
+  if (!pool) {
+    throw new Error("Database pool not initialized. Call initDatabase() first.");
+  }
+  return pool;
+}
+
+/**
  * Get database connection from pool
  */
 export async function getConnection(): Promise<PoolConnection> {

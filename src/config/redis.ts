@@ -79,6 +79,15 @@ export function getRedisClient(): RedisClientType {
 }
 
 /**
+ * Alias for getRedisClient for compatibility
+ */
+export function getRedis(): RedisClientType {
+  return getRedisClient();
+}
+
+export type { RedisClientType };
+
+/**
  * Set a key-value pair
  */
 export async function setRedisValue(key: string, value: string, ttl?: number): Promise<void> {

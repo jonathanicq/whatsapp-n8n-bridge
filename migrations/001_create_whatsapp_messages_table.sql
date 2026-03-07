@@ -1,10 +1,6 @@
--- Initial database setup for WhatsApp-n8n Bridge
--- This file is automatically executed when MySQL container starts
+-- WhatsApp Message Queue Tables
+-- Phase 4: Message Queuing and Retry System
 
--- Ensure we're using the correct database
-USE whatsapp_bridge;
-
--- Phase 4: WhatsApp Message Queue Tables
 -- Main messages table for tracking all sent/queued messages
 CREATE TABLE IF NOT EXISTS whatsapp_messages (
   id VARCHAR(36) PRIMARY KEY COMMENT 'UUID v4',
@@ -39,5 +35,3 @@ CREATE TABLE IF NOT EXISTS whatsapp_message_attempts (
   KEY idx_message_id (message_id) COMMENT 'For finding attempts by message',
   KEY idx_attempted_at (attempted_at) COMMENT 'For time-based analysis'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail of all send attempts';
-
-SELECT 'Database initialized for WhatsApp-n8n Bridge (Phase 4 schema)' as status;

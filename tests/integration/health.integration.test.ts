@@ -2,12 +2,31 @@
  * Integration tests for health endpoints
  */
 
-import { createApp } from "../../src/app";
-import { Express } from "express";
-
-// Mock dependencies
+// Mock dependencies BEFORE imports
 jest.mock("../../src/config/database");
 jest.mock("../../src/config/redis");
+jest.mock("../../src/config/logger");
+jest.mock("uuid", () => ({
+  v4: jest.fn(() => "uuid-test-123-456"),
+}));
+jest.mock("../../src/services/whatsapp-service", () => ({
+  getWhatsAppService: jest.fn(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+    getQRCode: jest.fn().mockReturnValue(null),
+    getStatus: jest.fn().mockReturnValue({
+      connected: false,
+      authenticated: false,
+      phoneNumber: undefined,
+      reconnectAttempts: 0,
+    }),
+    on: jest.fn(),
+    emit: jest.fn(),
+  })),
+}));
+
+import { createApp } from "../../src/app";
+import { Express } from "express";
 
 import * as database from "../../src/config/database";
 import * as redis from "../../src/config/redis";
