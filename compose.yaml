@@ -14,12 +14,6 @@ services:
       - ./waha_data:/app/.waha
     networks:
       - whatsapp-bridge-net
-    healthcheck:
-      test: ["CMD", "sh", "-c", "netstat -tln | grep 3000 || nc -zv localhost 3000"]
-      interval: 15s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
   app:
     build:
@@ -58,7 +52,7 @@ services:
       redis:
         condition: service_healthy
       waha:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
