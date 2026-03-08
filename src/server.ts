@@ -2,6 +2,8 @@ import express, { Request, Response } from "express";
 import { Client, LocalAuth, Message as WAMessage } from "whatsapp-web.js";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
+import yaml from "js-yaml";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const qrcode = require("qrcode-terminal");
 
@@ -9,6 +11,60 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+
+// ==================== SWAGGER UI SETUP ====================
+
+// Load and serve Swagger specification
+const swaggerPath = path.resolve("./swagger.yaml");
+let swaggerSpec: any = {};
+
+try {
+  const swaggerContent = fs.readFileSync(swaggerPath, "utf8");
+  swaggerSpec = yaml.load(swaggerContent);
+} catch (error) {
+  console.warn("[⚠] Swagger YAML not found. API docs will not be available.");
+}
+
+// Swagger UI HTML
+app.get("/api-docs", (_req: Request, res: Response) => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>lightWaha API Documentation</title>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@3/swagger-ui.css">
+    </head>
+    <body>
+      <div id="swagger-ui"></div>
+      <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@3/swagger-ui.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@3/swagger-ui-bundle.js"></script>
+      <script>
+        window.onload = function() {
+          SwaggerUIBundle({
+            url: "/swagger.json",
+            dom_id: '#swagger-ui',
+            presets: [
+              SwaggerUIBundle.presets.apis,
+              SwaggerUIBundle.SwaggerUIStandalonePreset
+            ],
+            layout: "BaseLayout",
+            deepLinking: true
+          })
+        }
+      </script>
+    </body>
+    </html>
+  `;
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  return res.send(html);
+});
+
+// Serve Swagger JSON
+app.get("/swagger.json", (_req: Request, res: Response) => {
+  return res.json(swaggerSpec);
+});
 
 // ==================== REAL WHATSAPP CLIENT ====================
 
@@ -461,6 +517,8 @@ async function start() {
       console.log(`  POST /send           - Send message`);
       console.log(`  POST /logout         - Logout WhatsApp`);
       console.log(`  POST /destroy        - Destroy client\n`);
+      console.log(`📚 API Documentation:\n`);
+      console.log(`  GET  /api-docs       - Interactive Swagger UI\n`);
       console.log(`🔧 Using: Real WhatsApp Web.js Client\n`);
     });
 

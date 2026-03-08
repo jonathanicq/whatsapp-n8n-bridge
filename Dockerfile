@@ -40,6 +40,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
+COPY swagger.yaml ./
 
 # Install dependencies
 RUN npm install

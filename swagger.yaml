@@ -1,0 +1,443 @@
+openapi: 3.0.0
+info:
+  title: lightWaha - WhatsApp REST API
+  description: |
+    A lightweight WhatsApp integration service providing REST API endpoints to send and receive WhatsApp messages.
+
+    Built with whatsapp-web.js and Express.js for direct WhatsApp Web automation.
+  version: 1.0.0
+  contact:
+    name: lightWaha Support
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:4000
+    description: Local development server
+  - url: http://192.168.0.116:4000
+    description: Production server example
+
+tags:
+  - name: Health & Status
+    description: Server health checks and connection status
+  - name: Authentication
+    description: QR code generation for WhatsApp authentication
+  - name: Messaging
+    description: Send and receive WhatsApp messages
+  - name: Session Management
+    description: Manage WhatsApp session lifecycle
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Simple endpoint to verify the server is running and responding
+      tags:
+        - Health & Status
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+              example:
+                status: ok
+
+  /status:
+    get:
+      summary: Get WhatsApp connection status
+      description: |
+        Check the current authentication status of the WhatsApp client.
+
+        **Status Meanings:**
+        - `connected: false, authenticated: false` - Client not initialized
+        - `connected: true, authenticated: false` - Browser connecting, not yet authenticated
+        - `connected: true, authenticated: true` - Fully authenticated and ready to send/receive
+      tags:
+        - Health & Status
+      responses:
+        '200':
+          description: Current connection status
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      connected:
+                        type: boolean
+                        example: false
+                      authenticated:
+                        type: boolean
+                        example: false
+                  - type: object
+                    properties:
+                      connected:
+                        type: boolean
+                        example: true
+                      authenticated:
+                        type: boolean
+                        example: false
+                  - type: object
+                    properties:
+                      connected:
+                        type: boolean
+                        example: true
+                      authenticated:
+                        type: boolean
+                        example: true
+                      me:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            example: "351937948946@c.us"
+                          number:
+                            type: string
+                            example: "351937948946"
+
+  /qr:
+    get:
+      summary: Get QR code for authentication (JSON)
+      description: |
+        Returns the current QR code as a string. Scan this with WhatsApp Linked Devices to authenticate.
+
+        **Note:** Only available when not yet authenticated. Returns error once authenticated.
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: QR code available for scanning
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  qr:
+                    type: string
+                    description: QR code data string
+                  message:
+                    type: string
+                    example: "QR code generated. Check server terminal for visual display."
+        '400':
+          description: No QR code available (already authenticated)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No QR code available. Already authenticated?"
+                  hint:
+                    type: string
+                    example: "Check the server terminal for the QR code display"
+
+  /qr.html:
+    get:
+      summary: Get QR code authentication page (HTML)
+      description: |
+        Returns an interactive HTML page with:
+        - Visual QR code display
+        - Step-by-step authentication instructions
+        - Link to check connection status
+
+        **Perfect for:** Web-based deployment where you can open a browser to scan the QR code
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: HTML page with QR code and instructions
+          content:
+            text/html:
+              schema:
+                type: string
+              example: |
+                <!DOCTYPE html>
+                <html>
+                <head><title>lightWaha - QR Code</title></head>
+                <body>
+                  <div class="container">
+                    <h1>📱 lightWaha</h1>
+                    <img src="...qr-code-image...">
+                    <ol>
+                      <li>Open WhatsApp on your mobile device</li>
+                      <li>Go to Settings</li>
+                      <li>Select Linked Devices</li>
+                      <li>Tap Link a device</li>
+                      <li>Point your camera at the QR code above</li>
+                    </ol>
+                  </div>
+                </body>
+                </html>
+        '400':
+          description: No QR code available (already authenticated)
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /send:
+    post:
+      summary: Send a WhatsApp message
+      description: |
+        Send a text message to a WhatsApp contact via REST API.
+
+        **Requirements:**
+        - WhatsApp must be authenticated (check `/status`)
+        - Recipient must be a valid phone number (with or without +)
+        - Message text must not be empty
+
+        **Phone Number Formats Accepted:**
+        - `351910270614` (without country code)
+        - `+351910270614` (with country code)
+        - Both formats are normalized internally
+      tags:
+        - Messaging
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - to
+                - text
+              properties:
+                to:
+                  type: string
+                  description: Recipient phone number (with or without + prefix)
+                  example: "351910270614"
+                text:
+                  type: string
+                  description: Message content to send
+                  example: "Hello! This is a test message"
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  messageId:
+                    type: object
+                    description: WhatsApp message metadata
+                    properties:
+                      id:
+                        type: string
+                        example: "3EB08BE77018B4BF937709"
+                      fromMe:
+                        type: boolean
+                        example: true
+                      remote:
+                        type: string
+                        example: "212244549910628@lid"
+                      _serialized:
+                        type: string
+                        example: "true_212244549910628@lid_3EB08BE77018B4BF937709"
+                  to:
+                    type: string
+                    example: "+351910270614"
+                  text:
+                    type: string
+                    example: "Hello! This is a test message"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2026-03-08T21:19:19.138Z"
+        '400':
+          description: Invalid request or WhatsApp not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Missing required fields: to, text"
+        '500':
+          description: Failed to send message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to send message"
+                  details:
+                    type: string
+                    example: "Contact not found or chat error"
+
+  /logout:
+    post:
+      summary: Logout from WhatsApp
+      description: |
+        Disconnect the WhatsApp session and clear authentication.
+
+        **Effect:** Clears stored session credentials. Next request will require re-scanning QR code.
+      tags:
+        - Session Management
+      responses:
+        '200':
+          description: Successfully logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Logged out from WhatsApp"
+        '500':
+          description: Failed to logout
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to logout"
+                  details:
+                    type: string
+
+  /destroy:
+    post:
+      summary: Destroy WhatsApp client
+      description: |
+        Completely destroy the WhatsApp client instance and clean up resources.
+
+        **Use Case:** Server shutdown or complete reset. More aggressive than `/logout`.
+      tags:
+        - Session Management
+      responses:
+        '200':
+          description: Client successfully destroyed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "WhatsApp client destroyed"
+        '500':
+          description: Failed to destroy client
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to destroy client"
+                  details:
+                    type: string
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+
+    StatusResponse:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        authenticated:
+          type: boolean
+        me:
+          type: object
+          properties:
+            id:
+              type: string
+            number:
+              type: string
+
+    SendMessageRequest:
+      type: object
+      required:
+        - to
+        - text
+      properties:
+        to:
+          type: string
+          description: Phone number with or without + prefix
+        text:
+          type: string
+          description: Message content
+
+    SendMessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        messageId:
+          type: object
+        to:
+          type: string
+        text:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+
+examples:
+  PhoneNumberFormats:
+    summary: Accepted phone number formats
+    value: |
+      ✅ Valid formats:
+      - "351910270614"          (digits only)
+      - "+351910270614"         (with country code)
+      - "00351910270614"        (alternative format)
+
+      ❌ Invalid:
+      - "(351) 910-270614"      (formatted numbers not supported)
+
+  WorkflowExample:
+    summary: Typical workflow
+    value: |
+      1. GET /status
+         → Check if authenticated
+
+      2. If not authenticated:
+         → GET /qr.html
+         → Scan QR code on phone
+         → Wait for authentication
+
+      3. POST /send
+         → Send messages to contacts
+
+      4. GET /status (anytime)
+         → Verify connection
+
+      5. POST /logout (optional)
+         → End session when done
