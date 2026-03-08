@@ -126,7 +126,7 @@ Check the WhatsApp connection status.
 {
   "connected": true,
   "authenticated": true,
-  "phoneNumber": "351910270614"
+  "phoneNumber": "351999888777"
 }
 ```
 
