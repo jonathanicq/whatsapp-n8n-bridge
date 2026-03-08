@@ -1,29 +1,88 @@
 import express, { Request, Response } from "express";
+import { Client, LocalAuth, Message as WAMessage } from "whatsapp-web.js";
 import dotenv from "dotenv";
+import path from "path";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const qrcode = require("qrcode-terminal");
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-// ==================== MOCK WHATSAPP CLIENT ====================
-// For POC testing without Chromium. In production, use real whatsapp-web.js
+// ==================== REAL WHATSAPP CLIENT ====================
 
-class MockWhatsAppClient {
+class RealWhatsAppClient {
+  private client: Client | null = null;
   private isReady = false;
   private lastQR = "";
-  private messages: Array<{ from: string; text: string; timestamp: Date }> = [];
 
   async initialize() {
-    console.log("[→] Initializing Mock WhatsApp Client...");
-    // Simulate QR generation
-    this.lastQR = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=mock_qr_code_" + Date.now();
-    console.log("[QR] Mock QR code generated");
+    console.log("[→] Initializing Real WhatsApp Client...");
 
-    // Simulate authentication delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    this.isReady = true;
-    console.log("[✓] Mock WhatsApp authenticated!");
+    this.client = new Client({
+      authStrategy: new LocalAuth({
+        clientId: "lightwaha",
+        dataPath: path.resolve("./sessions"),
+      }),
+      puppeteer: {
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-gpu",
+          "--disable-dev-shm-usage",
+        ],
+      },
+    });
+
+    // QR Code event - Display QR for authentication
+    this.client.on("qr", (qr: string) => {
+      this.lastQR = qr;
+      console.log("\n" + "=".repeat(60));
+      console.log("📱 SCAN THIS QR CODE WITH YOUR WHATSAPP:");
+      console.log("=".repeat(60) + "\n");
+
+      // Display QR in terminal
+      qrcode.generate(qr, { small: true });
+
+      console.log(
+        "\n" + "=".repeat(60)
+      );
+      console.log("Instructions:");
+      console.log("  1. Open WhatsApp on your phone");
+      console.log("  2. Go to Settings > Linked Devices");
+      console.log("  3. Tap 'Link a device'");
+      console.log("  4. Scan the QR code above");
+      console.log("=".repeat(60) + "\n");
+    });
+
+    // Ready event - Client authenticated and ready
+    this.client.on("ready", () => {
+      this.isReady = true;
+      console.log("\n" + "=".repeat(60));
+      console.log("✅ WHATSAPP AUTHENTICATED AND READY!");
+      console.log("=".repeat(60) + "\n");
+    });
+
+    // Incoming message event
+    this.client.on("message", (msg: WAMessage) => {
+      console.log(`[MSG] ${msg.from}: ${msg.body}`);
+    });
+
+    // Disconnected event
+    this.client.on("disconnected", (reason: string) => {
+      this.isReady = false;
+      console.log(`[✗] WhatsApp disconnected: ${reason}`);
+    });
+
+    // Error event
+    this.client.on("error", (error: Error) => {
+      console.error("[ERROR]", error.message);
+    });
+
+    // Initialize client
+    await this.client.initialize();
   }
 
   getQR() {
@@ -35,96 +94,57 @@ class MockWhatsAppClient {
   }
 
   async sendMessage(to: string, text: string) {
-    if (!this.isReady) throw new Error("Client not ready");
-    const id = "msg_" + Date.now();
-    console.log(`[MSG] Sent to ${to}: ${text}`);
-    return { id };
+    if (!this.client || !this.isReady) {
+      throw new Error("WhatsApp client not ready");
+    }
+
+    const phoneNumber = to.startsWith("+") ? to : `+${to}`;
+    const response = await this.client.sendMessage(`${phoneNumber}@c.us`, text);
+    return { id: response.id };
   }
 
   async logout() {
+    if (!this.client) throw new Error("Client not initialized");
+    await this.client.logout();
     this.isReady = false;
     this.lastQR = "";
-    this.messages = [];
-    console.log("[→] Logged out");
   }
 
   async destroy() {
+    if (!this.client) return;
+    await this.client.destroy();
+    this.client = null;
     this.isReady = false;
     this.lastQR = "";
-    this.messages = [];
-    console.log("[→] Destroyed");
   }
 
   getStatus() {
+    if (!this.client) {
+      return { connected: false, authenticated: false };
+    }
+
+    if (!this.isReady || !(this.client as any).info) {
+      return {
+        connected: true,
+        authenticated: false,
+      };
+    }
+
     return {
       connected: true,
-      authenticated: this.isReady,
-      me: this.isReady
-        ? {
-          id: "5511987654321@c.us",
-          number: "5511987654321",
-        }
-        : null,
+      authenticated: true,
+      me: {
+        id: (this.client as any).info.wid._serialized,
+        number: (this.client as any).info.wid.user,
+      },
     };
   }
-
-  receiveMessage(from: string, text: string) {
-    this.messages.push({ from, text, timestamp: new Date() });
-  }
 }
 
-// ==================== REAL WHATSAPP CLIENT ====================
-// Uncomment to use real whatsapp-web.js (requires Chromium)
+const PORT = process.env.PORT || 4000;
 
-// import { Client, LocalAuth, Message as WAMessage } from "whatsapp-web.js";
-// import path from "path";
-// class RealWhatsAppClient {
-//   private client: Client;
-//   private isReady = false;
-//   private lastQR = "";
-//
-//   async initialize() {
-//     this.client = new Client({
-//       authStrategy: new LocalAuth({
-//         clientId: "lightwaha",
-//         dataPath: path.resolve("./sessions"),
-//       }),
-//       puppeteer: {
-//         headless: true,
-//         args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
-//       },
-//     });
-//
-//     this.client.on("qr", (qr: string) => {
-//       this.lastQR = qr;
-//       console.log("[QR] QR code generated");
-//     });
-//
-//     this.client.on("ready", () => {
-//       this.isReady = true;
-//       console.log("[✓] WhatsApp ready!");
-//     });
-//
-//     this.client.on("message", (msg: WAMessage) => {
-//       console.log(`[MSG] ${msg.from}: ${msg.body}`);
-//     });
-//
-//     await this.client.initialize();
-//   }
-//
-//   // ... same methods as MockWhatsAppClient
-// }
-
-const PORT = process.env.PORT || 3000;
-const USE_MOCK = process.env.USE_MOCK !== "false";
-
-// Initialize client (mock for POC, real for production)
-const client = USE_MOCK ? new MockWhatsAppClient() : null;
-
-if (!client) {
-  console.error("Failed to create client");
-  process.exit(1);
-}
+// Initialize client
+const client = new RealWhatsAppClient();
 
 // ==================== ENDPOINTS ====================
 
@@ -139,21 +159,107 @@ app.get("/health", (_req: Request, res: Response) => {
  * GET /qr - Get QR code for authentication
  */
 app.get("/qr", (_req: Request, res: Response) => {
-  const qr = client?.getQR();
+  const qr = client.getQR();
   if (!qr) {
     return res.status(400).json({
       error: "No QR code available. Already authenticated?",
+      hint: "Check the server terminal for the QR code display",
     });
   }
 
-  return res.json({ qr });
+  return res.json({
+    qr,
+    message: "QR code generated. Check server terminal for visual display.",
+  });
+});
+
+/**
+ * GET /qr.html - Get QR code as HTML page
+ */
+app.get("/qr.html", (_req: Request, res: Response) => {
+  const qr = client.getQR();
+  if (!qr) {
+    return res.status(400).json({
+      error: "No QR code available.",
+    });
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>lightWaha - QR Code</title>
+      <style>
+        body {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          background: #f0f0f0;
+          font-family: Arial, sans-serif;
+        }
+        .container {
+          text-align: center;
+          background: white;
+          padding: 40px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+          color: #333;
+          margin-top: 0;
+        }
+        .qr-container {
+          margin: 30px 0;
+        }
+        canvas {
+          border: 2px solid #ddd;
+          padding: 10px;
+        }
+        .instruction {
+          color: #666;
+          font-size: 14px;
+          margin-top: 20px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>📱 lightWaha - WhatsApp QR Code</h1>
+        <div class="qr-container">
+          <p style="color: #666; font-size: 12px;">Generating QR Code...</p>
+          <canvas id="qrCanvas"></canvas>
+        </div>
+        <p class="instruction">
+          Scan this QR code with WhatsApp to authenticate<br>
+          <strong>Settings > Linked Devices > Link a device</strong>
+        </p>
+      </div>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+      <script>
+        const qrData = "${qr}";
+        new QRCode(document.getElementById("qrCanvas"), {
+          text: qrData,
+          width: 300,
+          height: 300,
+          colorDark: "#000000",
+          colorLight: "#ffffff"
+        });
+      </script>
+    </body>
+    </html>
+  `;
+
+  res.setHeader("Content-Type", "text/html");
+  return res.send(html);
 });
 
 /**
  * GET /status - Get WhatsApp connection status
  */
 app.get("/status", (_req: Request, res: Response) => {
-  const status = client?.getStatus();
+  const status = client.getStatus();
   return res.json(status);
 });
 
@@ -161,7 +267,7 @@ app.get("/status", (_req: Request, res: Response) => {
  * POST /send - Send a message
  */
 app.post("/send", async (_req: Request, res: Response) => {
-  if (!client?.isClientReady()) {
+  if (!client.isClientReady()) {
     return res.status(400).json({
       error: "WhatsApp not authenticated. Scan QR code first.",
     });
@@ -176,8 +282,7 @@ app.post("/send", async (_req: Request, res: Response) => {
   }
 
   try {
-    const phoneNumber = to.startsWith("+") ? to : `+${to}`;
-    const response = await client.sendMessage(phoneNumber, text);
+    const response = await client.sendMessage(to, text);
 
     return res.json({
       success: true,
@@ -199,12 +304,6 @@ app.post("/send", async (_req: Request, res: Response) => {
  * POST /logout - Logout from WhatsApp
  */
 app.post("/logout", async (_req: Request, res: Response) => {
-  if (!client) {
-    return res.status(400).json({
-      error: "WhatsApp client not initialized",
-    });
-  }
-
   try {
     await client.logout();
     console.log("[→] Logged out from WhatsApp");
@@ -226,12 +325,6 @@ app.post("/logout", async (_req: Request, res: Response) => {
  * POST /destroy - Destroy client
  */
 app.post("/destroy", async (_req: Request, res: Response) => {
-  if (!client) {
-    return res.status(400).json({
-      error: "WhatsApp client not initialized",
-    });
-  }
-
   try {
     await client.destroy();
     console.log("[→] WhatsApp client destroyed");
@@ -253,32 +346,27 @@ app.post("/destroy", async (_req: Request, res: Response) => {
 
 async function start() {
   try {
-    if (!client) {
-      throw new Error("Failed to initialize client");
-    }
-
     // Initialize WhatsApp
     await client.initialize();
 
     // Start Express server
     const server = app.listen(PORT, () => {
-      console.log(`\n✅ Server listening on http://localhost:${PORT}`);
+      console.log(`\n✅ Server listening on port ${PORT}`);
       console.log(`\n📋 Available endpoints:\n`);
       console.log(`  GET  /health         - Health check`);
       console.log(`  GET  /status         - WhatsApp status`);
-      console.log(`  GET  /qr             - Get QR code`);
+      console.log(`  GET  /qr             - Get QR code (JSON)`);
+      console.log(`  GET  /qr.html        - Get QR code (HTML page)`);
       console.log(`  POST /send           - Send message`);
       console.log(`  POST /logout         - Logout WhatsApp`);
       console.log(`  POST /destroy        - Destroy client\n`);
-      console.log(`🔧 Using: ${USE_MOCK ? "MOCK Client (for POC)" : "Real WhatsApp Client"}\n`);
+      console.log(`🔧 Using: Real WhatsApp Web.js Client\n`);
     });
 
     // Graceful shutdown
     process.on("SIGINT", async () => {
       console.log("\n[→] Shutting down...");
-      if (client) {
-        await client.destroy();
-      }
+      await client.destroy();
       server.close(() => process.exit(0));
     });
   } catch (error) {

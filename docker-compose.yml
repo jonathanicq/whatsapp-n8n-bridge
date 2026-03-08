@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  lightwaha:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      LOG_LEVEL: info
+      WA_HEADLESS: "true"
+    volumes:
+      - ./sessions:/app/sessions
+      - ./logs:/app/logs
+    restart: unless-stopped
+    container_name: lightwaha-app
+    networks:
+      - lightwaha-network
+
+networks:
+  lightwaha-network:
+    driver: bridge
