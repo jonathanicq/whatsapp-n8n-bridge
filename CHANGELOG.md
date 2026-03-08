@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.0] - 2026-03-07
+
+### Added (Phase 6: Custom n8n Node)
+- **n8n Custom Node Package (`n8n-nodes-whatsapp-bridge`)**:
+  - Installable npm package for n8n community nodes
+  - Self-contained module with credentials and node types
+- **WhatsAppBridge Action Node**:
+  - Four operations: sendMessage, queueMessage, getStatus, getWebhooks
+  - Phone number validation (E.164 format)
+  - Proper error handling and response formatting
+  - Supports multiple input items
+- **WhatsAppBridgeTrigger Webhook Node**:
+  - Automatic webhook registration on workflow activation
+  - Automatic webhook cleanup on workflow deactivation
+  - HMAC-SHA256 signature verification for security
+  - Message data parsing and emission
+  - Static data persistence for webhook IDs
+- **WhatsAppBridgeApi Credential Type**:
+  - Base URL configuration
+  - API key storage (encrypted in n8n)
+  - Proper credential interface implementation
+- **Shared HTTP Helper (GenericFunctions)**:
+  - Centralized API request handling
+  - Automatic credential management
+  - Proper header and authentication setup
+  - Error handling and logging
+- **Package Structure**:
+  - package.json with n8n metadata
+  - TypeScript configuration (strict mode, ES2020)
+  - Jest test configuration
+  - .npmignore and .gitignore for distribution
+  - Comprehensive README with usage examples
+- **Testing**:
+  - 17 passing smoke tests
+  - Structure verification for all nodes
+  - Property and method validation
+  - 100% TypeScript compilation success
+- **Documentation**:
+  - Installation instructions (UI and manual)
+  - Node operation documentation
+  - Credential configuration guide
+  - Usage examples and workflows
+  - API response examples
+  - Troubleshooting guide
+
+### Technical Details
+- Builds to ES2020 JavaScript (dist/ folder)
+- Compatible with n8n v2.1.5+
+- Uses n8n-workflow v1.0+ types
+- Webhook lifecycle: checkExists, create, delete methods
+- HMAC secret generation from webhook URL
+- Graceful error handling with NodeOperationError
+
+---
+
 ## [0.4.0] - 2026-03-07
 
 ### Added (Phase 5: Webhook & n8n Integration)

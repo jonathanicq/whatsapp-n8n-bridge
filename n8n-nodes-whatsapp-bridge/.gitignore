@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.d.ts
+*.d.ts.map
+*.js.map
+.DS_Store
+.env
+.env.local
+.env.*.local

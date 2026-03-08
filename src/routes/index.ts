@@ -8,7 +8,6 @@ import healthRoutes from "./health";
 import whatsappRoutes from "./whatsapp";
 import queueRoutes from "./queue";
 import { createWebhookRoutes } from "./webhooks";
-import { getPool } from "../config/database";
 
 export function createRouter(pool: Pool): Router {
   const router = Router();
@@ -35,7 +34,3 @@ export function createRouter(pool: Pool): Router {
 
   return router;
 }
-
-// Default export for backward compatibility
-const pool = getPool();
-export default createRouter(pool);
