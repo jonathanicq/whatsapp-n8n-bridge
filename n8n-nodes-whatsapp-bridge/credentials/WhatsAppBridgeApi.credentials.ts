@@ -9,9 +9,9 @@ export class WhatsAppBridgeApi implements ICredentialType {
 			displayName: 'Base URL',
 			name: 'baseUrl',
 			type: 'string',
-			default: 'http://localhost:3000',
-			placeholder: 'http://192.168.0.116:3000',
-			description: 'WhatsApp Bridge service base URL',
+			default: 'http://localhost:4000',
+			placeholder: 'http://192.168.0.116:4000',
+			description: 'WhatsApp Bridge service base URL (e.g., http://localhost:4000)',
 			required: true,
 		},
 		{
@@ -22,8 +22,8 @@ export class WhatsAppBridgeApi implements ICredentialType {
 				password: true,
 			},
 			default: '',
-			description: 'API key for authentication with WhatsApp Bridge',
-			required: true,
+			description: 'API key for authentication (optional, leave empty if not required)',
+			required: false,
 		},
 	];
 }

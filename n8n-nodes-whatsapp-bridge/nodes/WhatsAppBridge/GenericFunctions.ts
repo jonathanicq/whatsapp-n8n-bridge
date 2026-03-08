@@ -15,13 +15,19 @@ export async function whatsappBridgeApiRequest(
 	const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
 	const apiKey = credentials.apiKey as string;
 
+	const headers: Record<string, string> = {
+		'Content-Type': 'application/json',
+	};
+
+	// Only add API key header if provided
+	if (apiKey && apiKey.trim()) {
+		headers['x-api-key'] = apiKey;
+	}
+
 	const options: IRequestOptions = {
 		method,
 		url: `${baseUrl}${endpoint}`,
-		headers: {
-			'x-api-key': apiKey,
-			'Content-Type': 'application/json',
-		},
+		headers,
 		json: true,
 	};
 
