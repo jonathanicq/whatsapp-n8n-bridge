@@ -98,9 +98,32 @@ class RealWhatsAppClient {
       throw new Error("WhatsApp client not ready");
     }
 
-    const phoneNumber = to.startsWith("+") ? to : `+${to}`;
-    const response = await this.client.sendMessage(`${phoneNumber}@c.us`, text);
-    return { id: response.id };
+    // Format phone number without + prefix for chat ID
+    const phoneNumber = to.replace(/\D/g, '');
+    const chatId = `${phoneNumber}@c.us`;
+
+    try {
+      console.log(`[SEND] Attempting to send message to ${phoneNumber} (chatId: ${chatId})`);
+      console.log(`[SEND] Message content: "${text}"`);
+
+      // Try sending directly - whatsapp-web.js will handle the chat
+      const response = await this.client.sendMessage(chatId, text);
+
+      console.log(`[SEND] Message sent successfully. ID: ${response.id}`);
+      return { id: response.id };
+    } catch (error) {
+      // Detailed error logging to understand the failure
+      if (error instanceof Error) {
+        console.error(`[SEND] Error message: ${error.message}`);
+        console.error(`[SEND] Error stack: ${error.stack}`);
+      } else {
+        console.error(`[SEND] Unknown error type: ${typeof error}`);
+        console.error(`[SEND] Error value: ${JSON.stringify(error)}`);
+      }
+
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to send message: ${errorMsg}`);
+    }
   }
 
   async logout() {
