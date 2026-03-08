@@ -1,0 +1,28 @@
+# Source files - exclude from npm package
+src/
+index.ts
+*.test.ts
+*.spec.ts
+
+# Test files and config
+tests/
+tsconfig.json
+jest.config.js
+
+# Source directories (when not in src/)
+nodes/
+credentials/
+
+# Git and system files
+.git
+.gitignore
+.DS_Store
+.env*
+
+# NPM and dependency files
+npm-debug.log
+yarn-error.log
+
+# TypeScript declaration maps (optional - remove if you want them)
+*.d.ts.map
+*.js.map
