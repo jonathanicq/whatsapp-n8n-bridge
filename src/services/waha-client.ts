@@ -124,15 +124,16 @@ export class WAHAClient {
   async sendMessage(to: string, text: string): Promise<string> {
     try {
       const response = await this.client.post(
-        `/api/sessions/${this.sessionName}/messages`,
+        `/api/sendText`,
         {
+          session: this.sessionName,
           chatId: `${to}@c.us`,
           text: text,
         }
       );
       logInfo("Message sent via WAHA", {
         to,
-        messageId: response.data.id,
+        messageId: response.data.id || response.data.success,
       });
       return response.data.id || `msg_${Date.now()}`;
     } catch (error) {

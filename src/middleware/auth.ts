@@ -1,8 +1,9 @@
 /**
- * API authentication middleware (stub)
+ * API authentication middleware
  */
 
 import { Request, Response, NextFunction } from "express";
+import { getConfig } from "../config/environment";
 import { logWarn } from "../config/logger";
 import { AppError } from "./error-handler";
 import { HTTP_CODES, API_ERRORS } from "../utils/constants";
@@ -11,6 +12,7 @@ import { HTTP_CODES, API_ERRORS } from "../utils/constants";
  * Extend Express Request to include API key info
  */
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       apiKey?: string;
@@ -19,8 +21,7 @@ declare global {
 }
 
 /**
- * API Key authentication middleware (stub)
- * To be implemented in Phase 3
+ * API Key authentication middleware
  */
 export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
   // Get API key from header
@@ -28,7 +29,6 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
 
   if (apiKey) {
     req.apiKey = apiKey;
-    // TODO: Implement actual API key validation in Phase 3
   } else {
     logWarn("Request missing API key", {
       path: req.path,
@@ -36,8 +36,6 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
     });
   }
 
-  // For now, allow requests without API key (Phase 1 development)
-  // In production, this would throw an error
   next();
 }
 
@@ -45,10 +43,21 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
  * Require API key authentication
  */
 export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
+  const config = getConfig();
+  const configuredApiKey = config.apiKey;
+
   if (!req.apiKey) {
     throw new AppError(HTTP_CODES.UNAUTHORIZED, "API key required", API_ERRORS.INVALID_REQUEST);
   }
 
-  // TODO: Validate API key against database in Phase 3
+  // Validate against configured API key
+  if (configuredApiKey && req.apiKey !== configuredApiKey) {
+    throw new AppError(
+      HTTP_CODES.UNAUTHORIZED,
+      "Invalid API key",
+      API_ERRORS.INVALID_REQUEST,
+    );
+  }
+
   next();
 }

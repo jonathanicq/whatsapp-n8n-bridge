@@ -52,12 +52,9 @@ export function loadConfig(): AppConfig {
     wa: {
       sessionName: process.env.WA_SESSION_NAME || "whatsapp-bridge",
       phoneNumber: process.env.WA_PHONE_NUMBER,
+      headless: process.env.WA_HEADLESS !== "false",
     },
-    waha: {
-      host: process.env.WAHA_HOST || "waha",
-      port: parseInt(process.env.WAHA_PORT || "3000", 10),
-      apiKey: process.env.WAHA_API_KEY || undefined,
-    },
+    apiKey: process.env.API_KEY || "",
     webhook: {
       enableWebhooks: process.env.ENABLE_WEBHOOKS === "true",
       n8nWebhookUrl: process.env.N8N_WEBHOOK_URL || "",

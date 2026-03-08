@@ -27,12 +27,9 @@ export interface AppConfig {
   wa: {
     sessionName: string;
     phoneNumber?: string;
+    headless: boolean;
   };
-  waha: {
-    host: string;
-    port: number;
-    apiKey?: string;
-  };
+  apiKey: string;
   webhook: {
     enableWebhooks: boolean;
     n8nWebhookUrl: string;

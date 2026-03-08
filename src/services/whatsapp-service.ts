@@ -1,18 +1,17 @@
 /**
  * WhatsApp Service - Adapter that exposes provider interface
- * Can use any provider implementation (Baileys, WAHA, Official API, etc)
+ * Using direct whatsapp-web.js integration
  */
 
 import type { IWhatsAppProvider, ConnectionStatus, ProviderEventType } from "../providers/types";
-import { BaileysProvider } from "../providers/baileys-provider";
+import { WhatsAppWebProvider } from "../providers/whatsapp-web-provider";
 
 export class WhatsAppService implements IWhatsAppProvider {
   private provider: IWhatsAppProvider;
 
-  constructor(sessionName = "whatsapp-bridge") {
-    // Currently using Baileys provider
-    // Can be swapped to WAHA or Official API in the future
-    this.provider = new BaileysProvider(sessionName);
+  constructor(sessionName = "whatsapp-bridge", headless = true) {
+    // Using whatsapp-web.js provider directly
+    this.provider = new WhatsAppWebProvider(sessionName, headless);
   }
 
   /**
@@ -94,9 +93,12 @@ let serviceInstance: WhatsAppService | null = null;
 /**
  * Get or create WhatsApp service instance
  */
-export function getWhatsAppService(sessionName = "whatsapp-bridge"): WhatsAppService {
+export function getWhatsAppService(
+  sessionName = "whatsapp-bridge",
+  headless = true,
+): WhatsAppService {
   if (!serviceInstance) {
-    serviceInstance = new WhatsAppService(sessionName);
+    serviceInstance = new WhatsAppService(sessionName, headless);
   }
   return serviceInstance;
 }
