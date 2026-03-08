@@ -56,6 +56,7 @@ export function loadConfig(): AppConfig {
     waha: {
       host: process.env.WAHA_HOST || "waha",
       port: parseInt(process.env.WAHA_PORT || "3000", 10),
+      apiKey: process.env.WAHA_API_KEY || undefined,
     },
     webhook: {
       enableWebhooks: process.env.ENABLE_WEBHOOKS === "true",

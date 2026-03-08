@@ -28,16 +28,26 @@ export class WAHAClient {
   private baseUrl: string;
   private sessionName: string = "whatsapp-bridge";
   private qrCode: string | null = null;
+  private apiKey: string | null = null;
 
-  constructor(host: string, port: number) {
+  constructor(host: string, port: number, apiKey?: string) {
     this.baseUrl = `http://${host}:${port}`;
+    this.apiKey = apiKey || null;
+
+    const headers: Record<string, string> = {};
+    if (this.apiKey) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    }
+
     this.client = axios.create({
       baseURL: this.baseUrl,
       timeout: 10000,
+      headers,
     });
 
     logInfo("WAHA client initialized", {
       baseUrl: this.baseUrl,
+      authenticated: !!this.apiKey,
     });
   }
 

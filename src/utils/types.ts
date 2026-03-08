@@ -31,6 +31,7 @@ export interface AppConfig {
   waha: {
     host: string;
     port: number;
+    apiKey?: string;
   };
   webhook: {
     enableWebhooks: boolean;

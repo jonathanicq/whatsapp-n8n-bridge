@@ -1,25 +1,25 @@
 services:
-  # WAHA (WhatsApp HTTP API) service
-  # Uses WhatsApp Web via Puppeteer for reliable WhatsApp automation
-  # Can be replaced with official WAHA image when available
-  # For now, this service is optional - configure WAHA_HOST to external instance if needed
-  # waha:
-  #   image: your-waha-image:latest
-  #   container_name: whatsapp-bridge-waha
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3001:3000"
-  #   environment:
-  #     DEBUG: "whatsapp-api:*"
-  #   volumes:
-  #     - ./waha_data:/app/sessions
-  #   networks:
-  #     - whatsapp-bridge-net
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  # WAHA (WhatsApp HTTP API) - REST API for WhatsApp automation
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: whatsapp-bridge-waha
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      DEBUG: "waha:*"
+      LOG_LEVEL: "info"
+      WAHA_API_KEY: "whatsapp-bridge-key-123"
+    volumes:
+      - ./waha_data:/app/.waha
+    networks:
+      - whatsapp-bridge-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-H", "Authorization: Bearer whatsapp-bridge-key-123", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   app:
     build:
@@ -56,6 +56,8 @@ services:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      waha:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
@@ -115,6 +117,8 @@ volumes:
   mysql_data:
     driver: local
   redis_data:
+    driver: local
+  waha_data:
     driver: local
 
 networks:
