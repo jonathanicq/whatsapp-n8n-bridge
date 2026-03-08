@@ -1,234 +1,326 @@
-# n8n-nodes-whatsapp-bridge
+# WhatsApp Bridge n8n Node Package
 
-A custom n8n community node package for interacting with the WhatsApp Bridge service directly from n8n workflows.
+[![npm version](https://badge.fury.io/js/n8n-nodes-whatsapp-bridge-xyz.svg)](https://www.npmjs.com/package/n8n-nodes-whatsapp-bridge-xyz)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Installation
+A professional n8n community node package for integrating WhatsApp messaging capabilities directly into your n8n workflows.
 
-### Option 1: Via n8n Community Nodes UI (Recommended)
-1. Open n8n at `http://192.168.0.116:5678`
-2. Click **Settings** → **Community Nodes**
-3. Click **Install** and search for `n8n-nodes-whatsapp-bridge`
-4. Click **Install**
-5. n8n will restart and load the nodes automatically
+## 🚀 Quick Start
 
-### Option 2: Manual Installation
-Copy the `dist/` folder contents to your n8n custom nodes directory:
+### Prerequisites
+
+**Before installing this package, you MUST have the WhatsApp Bridge service running:**
+
+The package requires a backend service running locally or remotely. You have two options:
+
+#### Option 1: Docker (Recommended)
+Download and run the Docker container:
 
 ```bash
-cp -r dist/* ~/.n8n/custom/
-# or in Docker:
-docker cp dist/* <n8n-container>:/home/node/.n8n/custom/
-docker exec <n8n-container> npm restart
+git clone https://github.com/jonathanicq/whatsapp-n8n-bridge.git
+cd whatsapp-n8n-bridge
+docker compose up -d
 ```
 
-## Nodes
+**Docker Details:**
+- Service runs on `http://localhost:4000`
+- Includes MySQL, Redis, and Node.js services
+- Requires: 512MB RAM, 1 core CPU (1GB/2 cores recommended)
+- Chromium/Puppeteer included for WhatsApp automation
 
-### WhatsApp Bridge (Action Node)
+**GitHub Repository:** https://github.com/jonathanicq/whatsapp-n8n-bridge
 
-Send WhatsApp messages, queue messages for delivery, check connection status, or list registered webhooks.
+#### Option 2: Local Installation
+```bash
+npm install
+npm run dev  # Starts on http://localhost:4000
+```
+
+---
+
+### Installing the n8n Node Package
+
+#### Method 1: Via n8n UI (Recommended)
+
+1. Open n8n: `http://192.168.0.116:5678`
+2. Go to **Settings** → **Community Nodes**
+3. Click **Install**
+4. Search for `n8n-nodes-whatsapp-bridge-xyz`
+5. Click **Install**
+6. n8n will restart automatically
+
+#### Method 2: Via npm
+
+```bash
+cd /path/to/your/n8n
+npm install n8n-nodes-whatsapp-bridge-xyz
+```
+
+#### Method 3: Docker Mount
+
+```bash
+docker run -v ~/.n8n:/home/node/.n8n \
+  -e NODE_PATH=/home/node/.n8n/node_modules \
+  n8n/n8n
+```
+
+Then inside the container:
+```bash
+npm install n8n-nodes-whatsapp-bridge-xyz
+```
+
+---
+
+## 🔧 Configuration
+
+### Step 1: Create Credentials
+
+1. Open any n8n workflow
+2. Add a **WhatsApp Bridge** node
+3. Click **Create Credentials** → **WhatsApp Bridge API**
+4. Fill in the fields:
+
+   | Field | Value | Example |
+   |-------|-------|---------|
+   | **Base URL** | Your Bridge service URL | `http://localhost:4000` |
+   | **API Key** | (Optional) API key if configured | Leave empty if not required |
+
+5. Save credentials
+
+### Step 2: Use in Workflows
+
+Now you can use the WhatsApp Bridge nodes in your workflows!
+
+---
+
+## 📋 Available Nodes
+
+### 1. WhatsApp Bridge (Action Node)
+
+Perform operations on the WhatsApp service.
 
 **Operations:**
-- **Send Message** - Send a message immediately
-  - Phone Number (E.164 format, e.g., `+1234567890`)
-  - Message Text
 
-- **Queue Message** - Queue a message for reliable delivery with retries
-  - Phone Number
-  - Message Text
+#### Send Message
+Send an immediate WhatsApp message.
+- **To**: Phone number in E.164 format (e.g., `+351910270614`)
+- **Text**: Message content
 
-- **Get Status** - Check WhatsApp connection status
-  - Returns: `connected`, `sessionId`, `qrRequired`
-
-- **Get Webhooks** - List all registered webhooks
-  - Returns: array of webhook objects with id, name, url
-
-**Example Workflow:**
-```
-Input → WhatsApp Bridge (sendMessage) → Output
-```
-
-### WhatsApp Bridge Trigger
-
-Webhook trigger that fires when a WhatsApp message is received. Automatically registers and deregisters webhooks with the Bridge service.
-
-**Trigger Activation:**
-- Registers a webhook URL with the Bridge service
-- Stores webhook ID for later cleanup
-- Verifies incoming messages with HMAC-SHA256 signature
-
-**Incoming Message Data:**
 ```json
 {
-  "messageId": "msg-12345",
-  "sender": "+1234567890",
-  "text": "Hello from WhatsApp",
-  "type": "text",
-  "timestamp": "2026-03-07T12:00:00Z"
+  "to": "+351910270614",
+  "text": "Hello there!"
 }
 ```
 
-**Example Workflow:**
-```
-WhatsApp Bridge Trigger → Log Message → Send Reply (via WhatsApp Bridge node)
-```
+#### Queue Message
+Queue a message for reliable delivery with automatic retries.
+- **To**: Phone number
+- **Text**: Message content
 
-## Configuration
+#### Get Status
+Check the WhatsApp connection status.
 
-### Credentials: WhatsApp Bridge API
-
-Required fields:
-- **Base URL** - WhatsApp Bridge service URL (e.g., `http://192.168.0.116:3000`)
-- **API Key** - API key for authentication
-
-Store credentials in n8n:
-1. Open any workflow
-2. Click on any WhatsApp Bridge node
-3. Select "Create New" under Credentials
-4. Fill in Base URL and API Key
-5. Click "Create"
-
-## Usage Examples
-
-### Send a Message
-
-1. Create a workflow
-2. Add a **Trigger** node (e.g., Manual or Webhook)
-3. Add **WhatsApp Bridge** node
-4. Select operation: **Send Message**
-5. Configure credentials
-6. Set Phone Number: `+1234567890`
-7. Set Message Text: `Hello!`
-8. Click Execute
-
-### Receive Messages and Reply
-
-1. Create a workflow
-2. Add **WhatsApp Bridge Trigger** node
-3. Configure credentials
-4. Click **Activate** (workflow will register webhook)
-5. Add **WhatsApp Bridge** node (Send Message operation)
-6. Set Phone Number: `{{ $json.sender }}`
-7. Set Message Text: `Thanks for your message!`
-8. Click Execute
-9. Send a WhatsApp message to the connected number
-10. Workflow triggers and sends reply
-
-### Check Connection Status
-
-1. Add **WhatsApp Bridge** node
-2. Select operation: **Get Status**
-3. Configure credentials
-4. Click Execute
-5. Output shows connection status
-
-## API Response Examples
-
-### Send Message Response
-```json
-{
-  "messageId": "msg-abc123",
-  "status": "sent",
-  "timestamp": "2026-03-07T12:00:00Z"
-}
-```
-
-### Queue Message Response
-```json
-{
-  "messageId": "msg-xyz789",
-  "status": "queued",
-  "queuedAt": "2026-03-07T12:00:00Z",
-  "attempts": 0
-}
-```
-
-### Get Status Response
+**Response:**
 ```json
 {
   "connected": true,
-  "sessionId": "session-abc123",
-  "qrRequired": false
+  "authenticated": true,
+  "phoneNumber": "351910270614"
 }
 ```
 
-## Troubleshooting
+#### Get Webhooks
+List all registered webhooks.
+
+### 2. WhatsApp Bridge Trigger (Webhook Node)
+
+Trigger workflows when WhatsApp messages are received.
+
+**How it works:**
+1. Activate the trigger
+2. Service automatically registers webhook
+3. When message arrives, workflow is triggered
+4. Deactivate to unregister webhook
+
+**Received Message Format:**
+```json
+{
+  "id": "msg-123456",
+  "from": "+351910270614",
+  "text": "Hello from WhatsApp",
+  "timestamp": "2026-03-08T12:00:00Z",
+  "type": "text"
+}
+```
+
+---
+
+## 💡 Workflow Examples
+
+### Example 1: Send a Message on Demand
+
+```
+Manual Trigger
+  ↓
+WhatsApp Bridge (Send Message)
+  - To: +351910270614
+  - Text: "Hello There"
+  ↓
+Notification Node (Success)
+```
+
+### Example 2: Auto-Reply to Messages
+
+```
+WhatsApp Bridge Trigger (Webhook)
+  ↓
+Extract Sender: {{ $json.from }}
+  ↓
+WhatsApp Bridge (Send Message)
+  - To: {{ $json.from }}
+  - Text: "Thanks for your message! We'll respond soon."
+```
+
+### Example 3: Forward to External API
+
+```
+WhatsApp Bridge Trigger
+  ↓
+HTTP Request (POST to your API)
+  ↓
+Process Response
+  ↓
+WhatsApp Bridge (Send Message - Reply)
+```
+
+---
+
+## ⚠️ Troubleshooting
+
+### "Connection refused"
+**Problem:** Can't connect to Bridge service
+**Solution:**
+- Verify Bridge is running: `curl http://localhost:4000/health`
+- Check firewall settings
+- Ensure correct Base URL in credentials
 
 ### "Credentials not found"
-- Ensure you've created and selected WhatsApp Bridge API credentials in the node
-- Verify Base URL and API Key are correct
+**Problem:** Node says credentials missing
+**Solution:**
+- Create new credentials (Settings → Community Nodes → Manage)
+- Verify credentials are selected in the node
+- Test connection by clicking node settings
 
-### "Message failed to send"
-- Check that the phone number is in E.164 format (e.g., `+1234567890`)
-- Verify the WhatsApp Bridge service is running and accessible
-- Check Bridge logs for connection errors
+### "Phone number format error"
+**Problem:** Message failed to send
+**Solution:**
+- Use E.164 format: `+[country-code][number]`
+- Example: `+351910270614` (Portugal)
+- Remove spaces or dashes
 
 ### "Webhook registration failed"
-- Ensure n8n instance is publicly accessible (for external webhooks)
-- Check that the Base URL points to the correct Bridge service
-- Verify API Key is valid
+**Problem:** Trigger won't activate
+**Solution:**
+- Check Bridge service logs
+- Verify n8n instance is reachable
+- Ensure API Key (if required) is correct
+- Check network connectivity
 
-### "Trigger not firing"
-- Activate the workflow (click the toggle in the top-right)
-- Check that webhook is registered: call `GET /webhooks` on Bridge service
-- Verify webhook URL is correct (should match n8n webhook URL)
-- Send a test WhatsApp message to the connected number
+### "Message says queued but not sent"
+**Problem:** Messages not being delivered
+**Solution:**
+- Check WhatsApp authentication: Use "Get Status" operation
+- Verify phone number format
+- Check Bridge service logs for errors
+- Ensure message text is not empty
 
-## File Structure
+---
 
-```
-n8n-nodes-whatsapp-bridge/
-├── credentials/
-│   └── WhatsAppBridgeApi.credentials.ts
-├── nodes/
-│   └── WhatsAppBridge/
-│       ├── WhatsAppBridge.node.ts          # Action node
-│       ├── WhatsAppBridgeTrigger.node.ts   # Trigger node
-│       ├── GenericFunctions.ts             # Shared HTTP helper
-│       └── whatsapp.svg                    # Node icon
-├── tests/
-│   └── basic.test.ts                       # Smoke tests
-├── index.ts                                # Entry point
-├── package.json                            # Package metadata
-├── tsconfig.json                           # TypeScript config
-└── README.md                               # This file
-```
+## 🐛 Getting Help & Reporting Issues
 
-## Development
+### Found a Bug?
 
-### Build from source
-```bash
-npm install
-npm run build
-npm test
-```
+Create an issue on GitHub:
 
-### Testing
-```bash
-npm test                  # Run smoke tests
-npm run test:watch      # Watch mode
-npm run test:coverage   # With coverage report
-```
+**Steps:**
+1. Go to: https://github.com/jonathanicq/whatsapp-n8n-bridge/issues
+2. Click **New Issue**
+3. Provide:
+   - Description of the problem
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Environment (n8n version, OS, Docker version)
+   - Error logs (if available)
 
-## Security
+### Feature Requests
 
-- API keys are stored securely in n8n credentials
-- Webhook signatures are verified with HMAC-SHA256
-- No sensitive data is logged
-- All communication uses HTTPS (in production)
+Open a GitHub Discussion or Issue with:
+- Use case
+- Expected behavior
+- Why it would be useful
 
-## License
+### Need Help?
 
-MIT
+1. **Check existing issues:** https://github.com/jonathanicq/whatsapp-n8n-bridge/issues
+2. **Read the documentation:** https://github.com/jonathanicq/whatsapp-n8n-bridge#documentation
+3. **Create an issue** with the `[help]` tag for guidance
 
-## Support
+---
 
-For issues or questions:
-1. Check the Bridge service logs: `/opt/aiDeveloper/projects/whatsapp-n8n-bridge/`
-2. Verify credentials and network connectivity
-3. Check n8n execution logs in the workflow UI
+## 🔐 Security
 
-## Related
+- ✅ API credentials stored securely in n8n
+- ✅ Webhook signatures verified with HMAC-SHA256
+- ✅ No sensitive data logged
+- ✅ HTTPS support in production
+- ✅ Secrets never exposed in logs
 
-- [WhatsApp Bridge Project](https://github.com/jonathanicq/whatsapp-n8n-bridge)
-- [n8n Documentation](https://docs.n8n.io)
-- [n8n Community Nodes](https://n8n.io/docs/integrations/creating-nodes/)
+---
+
+## 📦 What's Included
+
+- **WhatsApp Bridge Node** - Action node for sending messages
+- **WhatsApp Bridge Trigger** - Webhook trigger for incoming messages
+- **WhatsApp Bridge API Credentials** - Secure credential management
+- **Full TypeScript support** - Type definitions included
+- **Complete documentation** - Inline help and examples
+
+---
+
+## 📋 Requirements
+
+| Component | Version | Notes |
+|-----------|---------|-------|
+| n8n | 1.0+ | Works with n8n 1.0 and later |
+| Node.js | 20+ | For bridge service |
+| Docker | Latest | For running bridge service |
+| RAM | 512MB | Minimum (1GB recommended) |
+| Storage | 500MB | For dependencies and session |
+
+---
+
+## 📄 License
+
+MIT License - See LICENSE for details
+
+---
+
+## 🔗 Useful Links
+
+- **Bridge Service Repository:** https://github.com/jonathanicq/whatsapp-n8n-bridge
+- **Issue Tracker:** https://github.com/jonathanicq/whatsapp-n8n-bridge/issues
+- **n8n Documentation:** https://docs.n8n.io
+- **n8n Nodes Guide:** https://docs.n8n.io/integrations/creating-nodes/
+
+---
+
+## 💬 Questions?
+
+- 📍 **Issues & Bugs:** GitHub Issues
+- 📚 **Documentation:** Repository README
+- 🆘 **Help:** Create an issue with `[help]` tag
+
+---
+
+**Made with ❤️ for the n8n community**
