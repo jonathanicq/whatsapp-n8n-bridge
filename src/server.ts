@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
 import yaml from "js-yaml";
+import { MessageQueue, StoredMessage } from "./messageQueue";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const qrcode = require("qrcode-terminal");
 
@@ -72,6 +73,11 @@ class RealWhatsAppClient {
   private client: Client | null = null;
   private isReady = false;
   private lastQR = "";
+  private messageQueue: MessageQueue;
+
+  constructor() {
+    this.messageQueue = new MessageQueue();
+  }
 
   async initialize() {
     console.log("[→] Initializing Real WhatsApp Client...");
@@ -123,6 +129,18 @@ class RealWhatsAppClient {
 
     // Incoming message event
     this.client.on("message", (msg: WAMessage) => {
+      const storedMessage: StoredMessage = {
+        id: msg.id._serialized,
+        from: msg.from,
+        fromName: msg.author || "Unknown",
+        body: msg.body,
+        timestamp: msg.timestamp * 1000, // Convert to milliseconds
+        isFromMe: msg.fromMe,
+      };
+
+      // Store message in queue
+      this.messageQueue.addMessage(storedMessage);
+
       console.log(`[MSG] ${msg.from}: ${msg.body}`);
     });
 
@@ -218,12 +236,33 @@ class RealWhatsAppClient {
       },
     };
   }
+
+  getNewMessages(since: number) {
+    const messages = this.messageQueue.getNewMessages(since);
+    const cursor = this.messageQueue.getLatestTimestamp();
+
+    return {
+      success: true,
+      messages,
+      cursor,
+      count: messages.length,
+    };
+  }
+
+  getMessageHistory(limit: number = 50, offset: number = 0) {
+    return this.messageQueue.getMessageHistory(limit, offset);
+  }
+
+  getMessageQueueStats() {
+    return this.messageQueue.getStats();
+  }
 }
 
 const PORT = process.env.PORT || 4000;
 
 // Initialize client
 const client = new RealWhatsAppClient();
+console.log("[→] MessageQueue initialized for message storage");
 
 // ==================== ENDPOINTS ====================
 
@@ -421,6 +460,49 @@ app.get("/status", (_req: Request, res: Response) => {
 });
 
 /**
+ * GET /messages/new - Get new messages since a given timestamp
+ */
+app.get("/messages/new", (_req: Request, res: Response) => {
+  const since = parseInt(_req.query.since as string, 10) || 0;
+
+  if (since < 0) {
+    return res.status(400).json({
+      error: "Invalid 'since' parameter",
+      message: "'since' must be a non-negative timestamp in milliseconds",
+    });
+  }
+
+  const result = client.getNewMessages(since);
+  return res.json(result);
+});
+
+/**
+ * GET /messages - Get message history with pagination
+ */
+app.get("/messages", (_req: Request, res: Response) => {
+  const limit = Math.min(parseInt(_req.query.limit as string, 10) || 50, 500); // Max 500
+  const offset = Math.max(parseInt(_req.query.offset as string, 10) || 0, 0);
+
+  if (limit < 1) {
+    return res.status(400).json({
+      error: "Invalid 'limit' parameter",
+      message: "'limit' must be at least 1",
+    });
+  }
+
+  const history = client.getMessageHistory(limit, offset);
+  return res.json(history);
+});
+
+/**
+ * GET /messages/stats - Get message queue statistics
+ */
+app.get("/messages/stats", (_req: Request, res: Response) => {
+  const stats = client.getMessageQueueStats();
+  return res.json(stats);
+});
+
+/**
  * POST /send - Send a message
  */
 app.post("/send", async (_req: Request, res: Response) => {
@@ -515,11 +597,14 @@ async function start() {
       console.log(`  GET  /qr             - Get QR code (JSON)`);
       console.log(`  GET  /qr.html        - Get QR code (HTML page)`);
       console.log(`  POST /send           - Send message`);
+      console.log(`  GET  /messages/new   - Get new messages (polling) [NEW]`);
+      console.log(`  GET  /messages       - Get message history (pagination) [NEW]`);
+      console.log(`  GET  /messages/stats - Get queue statistics [NEW]`);
       console.log(`  POST /logout         - Logout WhatsApp`);
       console.log(`  POST /destroy        - Destroy client\n`);
       console.log(`📚 API Documentation:\n`);
       console.log(`  GET  /api-docs       - Interactive Swagger UI\n`);
-      console.log(`🔧 Using: Real WhatsApp Web.js Client\n`);
+      console.log(`🔧 Using: Real WhatsApp Web.js Client with Message Queue\n`);
     });
 
     // Graceful shutdown

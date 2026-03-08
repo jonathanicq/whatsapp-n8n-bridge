@@ -5,6 +5,17 @@ info:
     A lightweight WhatsApp integration service providing REST API endpoints to send and receive WhatsApp messages.
 
     Built with whatsapp-web.js and Express.js for direct WhatsApp Web automation.
+
+    **Phase 2 Features (Active):**
+    - ✅ Message Sending (POST /send)
+    - ✅ Message Polling (GET /messages/new)
+    - ✅ Message History (GET /messages)
+    - ✅ Queue Statistics (GET /messages/stats)
+    - ✅ WhatsApp Authentication (QR code)
+
+    **Future (Phase 3/4):**
+    - 🔜 Webhook-based message delivery (real-time)
+    - 🔜 Message acknowledgment tracking
   version: 1.0.0
   contact:
     name: lightWaha Support
@@ -181,6 +192,208 @@ paths:
             text/html:
               schema:
                 type: string
+
+  /messages/new:
+    get:
+      summary: Get new messages (polling endpoint)
+      description: |
+        **Polling-based message retrieval (Phase 2 - Option 4)**
+
+        Returns all messages received since the given timestamp.
+        Use this to implement client-side polling for new messages.
+
+        **Workflow:**
+        1. Get messages since timestamp 0: `GET /messages/new?since=0`
+        2. Process messages
+        3. Store the `cursor` value
+        4. Next poll: `GET /messages/new?since={cursor}`
+
+        **Cursor-based pagination:**
+        - Returns `cursor` = latest message timestamp
+        - Use as `since` parameter for next request
+        - Guarantees no message gaps or duplicates
+      tags:
+        - Messaging
+      parameters:
+        - name: since
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: |
+            Unix timestamp in milliseconds.
+            Returns messages with timestamp > since.
+            Use 0 to get all messages.
+          example: 1646000000000
+      responses:
+        '200':
+          description: Successful message retrieval
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "true_351910270614@c.us_3EB08BE77018B4BF937709"
+                        from:
+                          type: string
+                          example: "351910270614@c.us"
+                        fromName:
+                          type: string
+                          example: "User Name"
+                        body:
+                          type: string
+                          example: "Hello! How are you?"
+                        timestamp:
+                          type: number
+                          example: 1646000000000
+                        isFromMe:
+                          type: boolean
+                          example: false
+                  cursor:
+                    type: number
+                    description: Latest message timestamp (use as 'since' for next poll)
+                    example: 1646000000100
+                  count:
+                    type: integer
+                    example: 2
+        '400':
+          description: Invalid 'since' parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+
+  /messages:
+    get:
+      summary: Get message history with pagination
+      description: |
+        Retrieve stored messages with pagination support.
+
+        **Parameters:**
+        - `limit`: Messages to return per request (max 500)
+        - `offset`: Number of messages to skip from start
+
+        **Example:**
+        ```
+        GET /messages?limit=20&offset=0   # First 20 messages
+        GET /messages?limit=20&offset=20  # Next 20 messages
+        ```
+
+        **Note:** This returns all stored messages (both incoming and outgoing).
+      tags:
+        - Messaging
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 500
+          description: Maximum number of messages to return
+          example: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Number of messages to skip from the beginning
+          example: 0
+      responses:
+        '200':
+          description: Message history with pagination
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 150
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        from:
+                          type: string
+                        fromName:
+                          type: string
+                        body:
+                          type: string
+                        timestamp:
+                          type: number
+                        isFromMe:
+                          type: boolean
+                  limit:
+                    type: integer
+                    example: 50
+                  offset:
+                    type: integer
+                    example: 0
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /messages/stats:
+    get:
+      summary: Get message queue statistics
+      description: |
+        Returns statistics about the message queue:
+        - Total messages stored
+        - Queue capacity
+        - Utilization percentage
+        - Oldest and newest message timestamps
+
+        **Use Case:** Monitor queue health and capacity.
+      tags:
+        - Messaging
+      responses:
+        '200':
+          description: Queue statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalMessages:
+                    type: integer
+                    example: 45
+                  maxCapacity:
+                    type: integer
+                    example: 1000
+                  utilizationPercent:
+                    type: number
+                    example: 4.5
+                  oldestMessage:
+                    type: number
+                    nullable: true
+                    example: 1646000000000
+                  newestMessage:
+                    type: number
+                    example: 1646000100000
 
   /send:
     post:
