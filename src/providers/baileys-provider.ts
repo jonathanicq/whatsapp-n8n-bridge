@@ -68,70 +68,88 @@ export class BaileysProvider extends EventEmitter implements IWhatsAppProvider {
   }
 
   /**
-   * Set up Baileys event handlers
+   * Set up Baileys event handlers with error catching
    */
   private setupEventHandlers(): void {
     if (!this.socket) return;
 
-    // Connection update
+    // Wrap connection update with error handling
     this.socket.ev.on("connection.update", async (update) => {
-      const { connection, lastDisconnect, qr } = update;
+      try {
+        const { connection, lastDisconnect, qr } = update;
 
-      if (qr) {
-        this.currentQR = qr;
-        this.emit("qr");
-        logInfo("QR code generated", { sessionName: this.sessionName });
-      }
-
-      if (connection === "close") {
-        const reason = (lastDisconnect?.error as unknown as Record<string, any>)?.output
-          ?.statusCode;
-        logWarn("Baileys disconnected", {
-          sessionName: this.sessionName,
-          reason,
-        });
-
-        // Logout if authentication error
-        if (reason === 401) {
-          await this.logout();
-        } else {
-          // Try to reconnect
-          this.scheduleReconnect();
+        if (qr) {
+          this.currentQR = qr;
+          this.emit("qr");
+          logInfo("QR code generated", { sessionName: this.sessionName });
         }
-      }
 
-      if (connection === "open") {
-        logInfo("Baileys connected", { sessionName: this.sessionName });
-        this.reconnectAttempts = 0;
-        this.emit("connected");
-      }
-    });
-
-    // Authentication update
-    this.socket.ev.on("creds.update", async () => {
-      // Save credentials to Redis
-      const phoneNumber = this.socket?.user?.id?.split(":")?.[0];
-      await updateSessionStatus(this.sessionName, true, true, phoneNumber);
-    });
-
-    // Message upsert
-    this.socket.ev.on("messages.upsert", async (msg) => {
-      const { messages } = msg;
-
-      for (const message of messages) {
-        // Skip if from me
-        if (message.key.fromMe) continue;
-
-        // Parse and emit message
-        const parsed = parseMessage(message as unknown as Record<string, unknown>);
-        if (parsed) {
-          const whatsAppMsg = toWhatsAppMessage(parsed);
-          this.emit("message", whatsAppMsg);
-          logInfo("Message received", {
-            from: whatsAppMsg.sender,
-            type: whatsAppMsg.type,
+        if (connection === "close") {
+          const reason = (lastDisconnect?.error as unknown as Record<string, any>)?.output
+            ?.statusCode;
+          logWarn("Baileys disconnected", {
+            sessionName: this.sessionName,
+            reason,
           });
+
+          // Logout if authentication error
+          if (reason === 401) {
+            await this.logout();
+          } else {
+            // Try to reconnect
+            this.scheduleReconnect();
+          }
+      }
+
+        if (connection === "open") {
+          logInfo("Baileys connected", { sessionName: this.sessionName });
+          this.reconnectAttempts = 0;
+          this.emit("connected");
         }
+      } catch (error) {
+        logError("Error in connection.update handler", error, {
+          sessionName: this.sessionName,
+        });
+      }
+    });
+
+    // Authentication update (with error handling)
+    this.socket.ev.on("creds.update", async () => {
+      try {
+        // Save credentials to Redis
+        const phoneNumber = this.socket?.user?.id?.split(":")?.[0];
+        await updateSessionStatus(this.sessionName, true, true, phoneNumber);
+      } catch (error) {
+        logError("Error in creds.update handler", error, {
+          sessionName: this.sessionName,
+        });
+      }
+    });
+
+    // Message upsert (with error handling)
+    this.socket.ev.on("messages.upsert", async (msg) => {
+      try {
+        const { messages } = msg;
+
+        for (const message of messages) {
+          // Skip if from me
+          if (message.key.fromMe) continue;
+
+          // Parse and emit message
+          const parsed = parseMessage(message as unknown as Record<string, unknown>);
+          if (parsed) {
+            const whatsAppMsg = toWhatsAppMessage(parsed);
+            this.emit("message", whatsAppMsg);
+            logInfo("Message received", {
+              from: whatsAppMsg.sender,
+              type: whatsAppMsg.type,
+            });
+          }
+        }
+      } catch (error) {
+        logError("Error in messages.upsert handler", error, {
+          sessionName: this.sessionName,
+        });
       }
     });
   }

@@ -219,15 +219,16 @@ async function shutdown(): Promise<void> {
   }
 }
 
-// Global error handlers (prevent Baileys errors from crashing the server)
+// Suppress uncaught exceptions/rejections from crashing the server
+// Baileys socket errors are logged to console but don't terminate the process
 process.on("uncaughtException", (error) => {
-  logError("Uncaught Exception (server continues)", error);
+  console.error("[Baileys/Internal Error]", error);
+  // Don't call logError - just swallow the error to keep server running
 });
 
 process.on("unhandledRejection", (reason) => {
-  logError("Unhandled Rejection (server continues)", {
-    error: reason instanceof Error ? reason.message : String(reason),
-  });
+  console.error("[Baileys/Internal Rejection]", reason);
+  // Don't call logError - just swallow the error to keep server running
 });
 
 // Start server
