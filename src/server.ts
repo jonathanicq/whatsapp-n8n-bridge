@@ -10,6 +10,7 @@ import { initRedis, closeRedis, getRedis } from "./config/redis";
 import { QueueWorkerService } from "./services/queue-worker";
 import { RedisQueueManager } from "./services/queue-manager";
 import { MessageRepository } from "./services/message-repository";
+import { WAHAClient } from "./services/waha-client";
 
 let server: any = null;
 let queueWorker: QueueWorkerService | null = null;
@@ -41,11 +42,24 @@ async function start(): Promise<void> {
     logInfo("Redis initialized");
 
     // Initialize WAHA client (WhatsApp HTTP API)
+    const wahaClient = new WAHAClient(
+      config.waha?.host || "waha",
+      config.waha?.port || 3000,
+      config.waha?.apiKey
+    );
     logInfo("WAHA client configured", {
       host: config.waha?.host || "waha",
       port: config.waha?.port || 3000,
     });
-    logInfo("WhatsApp initialization delegated to WAHA service");
+
+    // Start WAHA session (generates QR code for authentication)
+    try {
+      await wahaClient.startSession();
+      logInfo("WAHA session started - QR code will be generated");
+    } catch (error) {
+      logError("Failed to start WAHA session", error);
+      // Continue anyway - session might already exist
+    }
 
     // Initialize queue worker
     const pool = getPool();
