@@ -48,10 +48,14 @@ async function start(): Promise<void> {
     await initRedis();
     logInfo("Redis initialized");
 
-    // Initialize WhatsApp service
+    // Initialize WhatsApp service (non-blocking - server starts even if initialization fails)
     const whatsAppService = getWhatsAppService();
-    await whatsAppService.initialize();
-    logInfo("WhatsApp service initialized");
+    whatsAppService.initialize().catch((error) => {
+      logError("WhatsApp service initialization failed (will retry on demand)", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+    logInfo("WhatsApp service initialization started (non-blocking)");
 
     // Initialize queue worker
     const pool = getPool();
@@ -152,19 +156,9 @@ async function start(): Promise<void> {
       });
     });
 
-    // Handle graceful shutdown
-    process.on("SIGTERM", shutdown);
-    process.on("SIGINT", shutdown);
-
-    process.on("unhandledRejection", (reason: unknown) => {
-      logError("Unhandled Promise rejection", reason);
-      shutdown();
-    });
-
-    process.on("uncaughtException", (error: Error) => {
-      logError("Uncaught Exception", error);
-      shutdown();
-    });
+    // Handle graceful shutdown (only for SIGTERM/SIGINT, not for errors)
+    process.once("SIGTERM", shutdown);
+    process.once("SIGINT", shutdown);
   } catch (error) {
     logError("Failed to start server", error);
     process.exit(1);
@@ -224,6 +218,17 @@ async function shutdown(): Promise<void> {
     process.exit(1);
   }
 }
+
+// Global error handlers (prevent Baileys errors from crashing the server)
+process.on("uncaughtException", (error) => {
+  logError("Uncaught Exception (server continues)", error);
+});
+
+process.on("unhandledRejection", (reason) => {
+  logError("Unhandled Rejection (server continues)", {
+    error: reason instanceof Error ? reason.message : String(reason),
+  });
+});
 
 // Start server
 start().catch((error) => {
