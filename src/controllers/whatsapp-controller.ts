@@ -1,25 +1,38 @@
 /**
  * WhatsApp controller - handle API endpoints
+ * Uses WAHA (WhatsApp HTTP API) for all WhatsApp operations
  */
 
 import { Request, Response } from "express";
 import QRCode from "qrcode";
-import { getWhatsAppService } from "../services/whatsapp-service";
+import { getConfig } from "../config/environment";
+import { WAHAClient } from "../services/waha-client";
 import { logInfo, logError } from "../config/logger";
 import { ApiResponse, SendMessageRequest, SendMessageResponse } from "../utils/types";
 import { HTTP_CODES, API_ERRORS } from "../utils/constants";
 import { validateSendMessageRequest } from "../utils/validators";
 
+// Initialize WAHA client
+let wahaClient: WAHAClient | null = null;
+
+function getWAHAClient(): WAHAClient {
+  if (!wahaClient) {
+    const config = getConfig();
+    wahaClient = new WAHAClient(config.waha.host, config.waha.port);
+  }
+  return wahaClient;
+}
+
 /**
- * GET /whatsapp/qr - Get current QR code
+ * GET /whatsapp/qr - Get current QR code from WAHA
  */
 export async function getQRCode(_req: Request, res: Response<ApiResponse<unknown>>): Promise<void> {
   try {
-    const service = getWhatsAppService();
-    const qr = service.getQRCode();
+    const waha = getWAHAClient();
+    const qr = await waha.getQRCode();
 
     if (!qr) {
-      logInfo("QR code requested but not available");
+      logInfo("QR code requested but not available (may be authenticated)");
       res.status(HTTP_CODES.BAD_REQUEST).json({
         success: false,
         error: {
@@ -41,25 +54,25 @@ export async function getQRCode(_req: Request, res: Response<ApiResponse<unknown
       },
     });
 
-    logInfo("QR code retrieved");
+    logInfo("QR code retrieved from WAHA");
 
     res.status(HTTP_CODES.OK).json({
       success: true,
       data: {
         qr: qrDataUrl,
-        qrText: qr, // Raw QR text for terminal scanning
+        qrText: qr,
         expiresIn: 60, // seconds
       },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    logError("Failed to generate QR code", error);
+    logError("Failed to get QR code from WAHA", error);
 
     res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
         code: "QR_CODE_ERROR",
-        message: "Failed to generate QR code",
+        message: "Failed to get QR code",
       },
       timestamp: new Date().toISOString(),
     });
@@ -67,14 +80,17 @@ export async function getQRCode(_req: Request, res: Response<ApiResponse<unknown
 }
 
 /**
- * GET /whatsapp/status - Get WhatsApp status
+ * GET /whatsapp/status - Get WhatsApp status from WAHA
  */
 export async function getStatus(_req: Request, res: Response<ApiResponse<unknown>>): Promise<void> {
   try {
-    const service = getWhatsAppService();
-    const status = service.getStatus();
+    const waha = getWAHAClient();
+    const status = await waha.getStatus();
 
-    logInfo("WhatsApp status retrieved", status);
+    logInfo("WhatsApp status retrieved from WAHA", {
+      connected: status.connected,
+      authenticated: status.authenticated,
+    });
 
     res.status(HTTP_CODES.OK).json({
       success: true,
@@ -82,7 +98,7 @@ export async function getStatus(_req: Request, res: Response<ApiResponse<unknown
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    logError("Failed to get WhatsApp status", error);
+    logError("Failed to get WAHA status", error);
 
     res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).json({
       success: false,
@@ -96,14 +112,14 @@ export async function getStatus(_req: Request, res: Response<ApiResponse<unknown
 }
 
 /**
- * POST /whatsapp/logout - Logout WhatsApp
+ * POST /whatsapp/logout - Logout from WhatsApp via WAHA
  */
 export async function logout(_req: Request, res: Response<ApiResponse<unknown>>): Promise<void> {
   try {
-    const service = getWhatsAppService();
-    await service.logout();
+    const waha = getWAHAClient();
+    await waha.stopSession();
 
-    logInfo("WhatsApp logout initiated");
+    logInfo("WAHA session stopped (logged out)");
 
     res.status(HTTP_CODES.OK).json({
       success: true,
@@ -111,7 +127,7 @@ export async function logout(_req: Request, res: Response<ApiResponse<unknown>>)
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    logError("Failed to logout", error);
+    logError("Failed to logout from WAHA", error);
 
     res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).json({
       success: false,
@@ -125,7 +141,7 @@ export async function logout(_req: Request, res: Response<ApiResponse<unknown>>)
 }
 
 /**
- * POST /whatsapp/send - Send a message
+ * POST /whatsapp/send - Send a message via WAHA
  */
 export async function sendMessage(
   req: Request<unknown, unknown, SendMessageRequest>,
@@ -135,17 +151,12 @@ export async function sendMessage(
     // Validate request
     const validation = validateSendMessageRequest(req.body);
     if (!validation.valid && validation.error) {
-      const statusCode =
-        validation.error.code === API_ERRORS.MESSAGE_TOO_LONG
-          ? HTTP_CODES.BAD_REQUEST
-          : HTTP_CODES.BAD_REQUEST;
-
       logInfo("Message validation failed", {
         code: validation.error.code,
         message: validation.error.message,
       });
 
-      res.status(statusCode).json({
+      res.status(HTTP_CODES.BAD_REQUEST).json({
         success: false,
         error: {
           code: validation.error.code,
@@ -157,18 +168,18 @@ export async function sendMessage(
     }
 
     const { to, text } = req.body;
-    const service = getWhatsAppService();
+    const waha = getWAHAClient();
 
     // Check connection status
-    const status = service.getStatus();
+    const status = await waha.getStatus();
     if (!status.connected) {
-      logInfo("Send message failed: provider not connected");
+      logInfo("Send message failed: WAHA not connected");
 
       res.status(HTTP_CODES.SERVICE_UNAVAILABLE).json({
         success: false,
         error: {
           code: API_ERRORS.PROVIDER_NOT_CONNECTED,
-          message: "WhatsApp provider is not connected",
+          message: "WhatsApp is not connected. Please try again.",
         },
         timestamp: new Date().toISOString(),
       });
@@ -176,23 +187,23 @@ export async function sendMessage(
     }
 
     if (!status.authenticated) {
-      logInfo("Send message failed: provider not authenticated");
+      logInfo("Send message failed: WAHA not authenticated");
 
       res.status(HTTP_CODES.SERVICE_UNAVAILABLE).json({
         success: false,
         error: {
           code: API_ERRORS.PROVIDER_NOT_AUTHENTICATED,
-          message: "WhatsApp provider is not authenticated. Please scan QR code first.",
+          message: "WhatsApp is not authenticated. Please scan QR code at /whatsapp/qr",
         },
         timestamp: new Date().toISOString(),
       });
       return;
     }
 
-    // Send message
-    const messageId = await service.sendMessage(to, text);
+    // Send message via WAHA
+    const messageId = await waha.sendMessage(to, text);
 
-    logInfo("Message sent successfully", {
+    logInfo("Message sent via WAHA successfully", {
       to,
       messageId,
       textLength: text.length,
@@ -208,7 +219,7 @@ export async function sendMessage(
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    logError("Failed to send message", error);
+    logError("Failed to send message via WAHA", error);
 
     res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).json({
       success: false,

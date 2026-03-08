@@ -26,6 +26,7 @@
   "author": "jonathanicq",
   "license": "PRIVATE",
   "dependencies": {
+    "axios": "^1.13.6",
     "baileys": "^7.0.0-rc.9",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

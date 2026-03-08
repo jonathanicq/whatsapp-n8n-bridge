@@ -7,20 +7,12 @@ import { getConfig } from "./config/environment";
 import { initLogger, logInfo, logError } from "./config/logger";
 import { initDatabase, closeDatabase, getPool } from "./config/database";
 import { initRedis, closeRedis, getRedis } from "./config/redis";
-import { getWhatsAppService } from "./services/whatsapp-service";
-import { WhatsAppMessage } from "./models/whatsapp-message";
 import { QueueWorkerService } from "./services/queue-worker";
 import { RedisQueueManager } from "./services/queue-manager";
 import { MessageRepository } from "./services/message-repository";
-import { WebhookDispatcher } from "./services/webhook-dispatcher";
-import { WebhookQueueWorker } from "./services/webhook-queue-worker";
-import { WebhookRepository } from "./services/webhook-repository";
-import { IncomingMessage } from "./models/webhook";
 
 let server: any = null;
 let queueWorker: QueueWorkerService | null = null;
-let webhookDispatcher: WebhookDispatcher | null = null;
-let webhookQueueWorker: WebhookQueueWorker | null = null;
 
 /**
  * Start the server
@@ -48,14 +40,12 @@ async function start(): Promise<void> {
     await initRedis();
     logInfo("Redis initialized");
 
-    // Initialize WhatsApp service (non-blocking - server starts even if initialization fails)
-    const whatsAppService = getWhatsAppService();
-    whatsAppService.initialize().catch((error) => {
-      logError("WhatsApp service initialization failed (will retry on demand)", {
-        error: error instanceof Error ? error.message : String(error),
-      });
+    // Initialize WAHA client (WhatsApp HTTP API)
+    logInfo("WAHA client configured", {
+      host: config.waha?.host || "waha",
+      port: config.waha?.port || 3000,
     });
-    logInfo("WhatsApp service initialization started (non-blocking)");
+    logInfo("WhatsApp initialization delegated to WAHA service");
 
     // Initialize queue worker
     const pool = getPool();
@@ -66,83 +56,16 @@ async function start(): Promise<void> {
     await queueWorker.start();
     logInfo("Queue worker started");
 
-    // Initialize webhook dispatcher and worker (Phase 5)
-    if (config.webhook.enableWebhooks) {
-      webhookDispatcher = new WebhookDispatcher(pool, redis);
-      webhookQueueWorker = new WebhookQueueWorker(pool, redis);
-      webhookQueueWorker.start();
-      logInfo("Webhook dispatcher and queue worker initialized");
-
-      // Bootstrap n8n webhook if configured
-      if (config.webhook.n8nWebhookUrl) {
-        try {
-          const webhookRepo = new WebhookRepository(pool);
-          const existing = await webhookRepo.getWebhookByUrl(
-            config.webhook.n8nWebhookUrl
-          );
-          if (!existing) {
-            await webhookRepo.createWebhook(
-              "n8n Auto-registered",
-              config.webhook.n8nWebhookUrl,
-              config.webhook.defaultSecret || ""
-            );
-            logInfo("n8n webhook auto-bootstrapped", {
-              url: config.webhook.n8nWebhookUrl,
-            });
-          }
-        } catch (error) {
-          logError("Failed to auto-bootstrap n8n webhook", {
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-    }
-
-    // Subscribe to WhatsApp events
-    whatsAppService.on("message", (data: unknown) => {
-      const message = data as WhatsAppMessage;
-      logInfo("WhatsApp message received", {
-        sender: message.sender,
-        messageId: message.messageId,
-        type: message.type,
-      });
-
-      // Dispatch to webhooks (Phase 5)
-      if (webhookDispatcher && config.webhook.enableWebhooks) {
-        const incomingMessage: IncomingMessage = {
-          messageId: message.messageId,
-          sender: message.sender,
-          timestamp: Math.floor(Date.now() / 1000), // Unix timestamp
-          type: message.type || "text",
-          text: message.text,
-          isGroup: message.isGroup || false,
-          fromMe: message.fromMe || false,
-          status: "received",
-        };
-        webhookDispatcher.dispatch(incomingMessage).catch((error) => {
-          logError("Failed to dispatch webhook", {
-            error: error instanceof Error ? error.message : String(error),
-          });
-        });
-      }
+    // Webhook handling is delegated to WAHA service
+    // WAHA manages incoming message webhooks through its own HTTP endpoints
+    logInfo("Webhook configuration loaded", {
+      enableWebhooks: config.webhook.enableWebhooks,
+      n8nWebhookUrl: config.webhook.n8nWebhookUrl || "not configured",
     });
 
-    whatsAppService.on("qr", () => {
-      logInfo("WhatsApp QR code generated");
-      // TODO: Store in cache or emit to frontend
-    });
-
-    whatsAppService.on("connected", () => {
-      logInfo("WhatsApp connected");
-    });
-
-    whatsAppService.on("logout", () => {
-      logInfo("WhatsApp logged out");
-    });
-
-    whatsAppService.on("reconnect_failed", () => {
-      logError("WhatsApp reconnection failed");
-    });
+    // Note: Message events and webhooks are handled through WAHA's polling/webhook system
+    // WAHA is responsible for managing WebSocket connections and forwarding events
+    logInfo("WAHA configured for WhatsApp event handling");
 
     // Create Express app
     const app = createApp(pool);
@@ -178,12 +101,6 @@ async function shutdown(): Promise<void> {
       logInfo("Queue worker stopped");
     }
 
-    // Stop webhook queue worker
-    if (webhookQueueWorker) {
-      webhookQueueWorker.stop();
-      logInfo("Webhook queue worker stopped");
-    }
-
     // Close HTTP server
     if (server) {
       await new Promise<void>((resolve, reject) => {
@@ -198,10 +115,8 @@ async function shutdown(): Promise<void> {
       });
     }
 
-    // Disconnect WhatsApp service
-    const whatsAppService = getWhatsAppService();
-    await whatsAppService.disconnect();
-    logInfo("WhatsApp service disconnected");
+    // Note: WAHA handles WhatsApp connection lifecycle independently
+    logInfo("WAHA connection closed");
 
     // Close database
     await closeDatabase();

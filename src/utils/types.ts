@@ -28,6 +28,10 @@ export interface AppConfig {
     sessionName: string;
     phoneNumber?: string;
   };
+  waha: {
+    host: string;
+    port: number;
+  };
   webhook: {
     enableWebhooks: boolean;
     n8nWebhookUrl: string;
