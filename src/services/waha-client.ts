@@ -26,21 +26,29 @@ export interface WAHASessionStatus {
 export class WAHAClient {
   private client: AxiosInstance;
   private baseUrl: string;
-  private sessionName: string = "whatsapp-bridge";
+  private sessionName: string = "default";
   private qrCode: string | null = null;
-  private apiKey: string | null = null;
 
   constructor(host: string, port: number, apiKey?: string) {
     this.baseUrl = `http://${host}:${port}`;
-    this.apiKey = apiKey || null;
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (apiKey) {
+      headers["X-API-Key"] = apiKey;
+    }
 
     this.client = axios.create({
       baseURL: this.baseUrl,
       timeout: 10000,
+      headers,
     });
 
     logInfo("WAHA client initialized", {
       baseUrl: this.baseUrl,
+      hasApiKey: !!apiKey,
     });
   }
 

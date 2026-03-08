@@ -18,11 +18,7 @@ let wahaClient: WAHAClient | null = null;
 function getWAHAClient(): WAHAClient {
   if (!wahaClient) {
     const config = getConfig();
-    wahaClient = new WAHAClient(
-      config.waha.host,
-      config.waha.port,
-      config.waha.apiKey
-    );
+    wahaClient = new WAHAClient(config.waha.host, config.waha.port, config.waha.apiKey);
   }
   return wahaClient;
 }

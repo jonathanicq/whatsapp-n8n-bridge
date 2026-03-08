@@ -9,7 +9,7 @@ services:
     environment:
       DEBUG: "waha:*"
       LOG_LEVEL: "info"
-      WAHA_API_KEY: "G0aheadandroam"
+      WAHA_API_KEY: "whatsapp123"
       WAHA_DASHBOARD_USERNAME: "admin"
       WAHA_DASHBOARD_PASSWORD: "G0aheadandroam"
       WHATSAPP_SWAGGER_USERNAME: "admin"
@@ -47,7 +47,7 @@ services:
       REDIS_DB: 0
       WAHA_HOST: waha
       WAHA_PORT: 3000
-      WAHA_API_KEY: G0aheadandroam
+      WAHA_API_KEY: "whatsapp123"
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data

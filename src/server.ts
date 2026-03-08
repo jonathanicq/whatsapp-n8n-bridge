@@ -31,6 +31,9 @@ async function start(): Promise<void> {
       nodeEnv: config.nodeEnv,
       appEnv: config.appEnv,
       logLevel: config.logLevel,
+      wahaHost: config.waha?.host,
+      wahaPort: config.waha?.port,
+      wahaApiKey: config.waha?.apiKey ? "***" : "not set",
     });
 
     // Initialize database
