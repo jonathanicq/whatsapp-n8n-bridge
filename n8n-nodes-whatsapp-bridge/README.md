@@ -42,7 +42,7 @@ npm run dev  # Starts on http://localhost:4000
 
 #### Method 1: Via n8n UI (Recommended)
 
-1. Open n8n: `http://192.168.0.116:5678`
+1. Open n8n: `http://your-n8n-address:5678`
 2. Go to **Settings** → **Community Nodes**
 3. Click **Install**
 4. Search for `n8n-nodes-whatsapp-bridge-xyz`

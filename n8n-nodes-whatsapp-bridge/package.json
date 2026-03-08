@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-whatsapp-bridge-xyz",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "n8n community nodes for WhatsApp Bridge service",
   "license": "MIT",
   "author": "WhatsApp Bridge Team",
