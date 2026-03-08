@@ -34,20 +34,13 @@ export class WAHAClient {
     this.baseUrl = `http://${host}:${port}`;
     this.apiKey = apiKey || null;
 
-    const headers: Record<string, string> = {};
-    if (this.apiKey) {
-      headers["Authorization"] = `Bearer ${this.apiKey}`;
-    }
-
     this.client = axios.create({
       baseURL: this.baseUrl,
       timeout: 10000,
-      headers,
     });
 
     logInfo("WAHA client initialized", {
       baseUrl: this.baseUrl,
-      authenticated: !!this.apiKey,
     });
   }
 
