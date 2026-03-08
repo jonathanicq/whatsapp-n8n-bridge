@@ -103,12 +103,12 @@ Perform operations on the WhatsApp service.
 
 #### Send Message
 Send an immediate WhatsApp message.
-- **To**: Phone number in E.164 format (e.g., `+351910270614`)
+- **To**: Phone number in E.164 format (e.g., `+351999888777`)
 - **Text**: Message content
 
 ```json
 {
-  "to": "+351910270614",
+  "to": "+351999888777",
   "text": "Hello there!"
 }
 ```
@@ -147,7 +147,7 @@ Trigger workflows when WhatsApp messages are received.
 ```json
 {
   "id": "msg-123456",
-  "from": "+351910270614",
+  "from": "+351999888777",
   "text": "Hello from WhatsApp",
   "timestamp": "2026-03-08T12:00:00Z",
   "type": "text"
@@ -164,7 +164,7 @@ Trigger workflows when WhatsApp messages are received.
 Manual Trigger
   ↓
 WhatsApp Bridge (Send Message)
-  - To: +351910270614
+  - To: +351999888777
   - Text: "Hello There"
   ↓
 Notification Node (Success)
@@ -216,7 +216,7 @@ WhatsApp Bridge (Send Message - Reply)
 **Problem:** Message failed to send
 **Solution:**
 - Use E.164 format: `+[country-code][number]`
-- Example: `+351910270614` (Portugal)
+- Example: `+351999888777` (Portugal)
 - Remove spaces or dashes
 
 ### "Webhook registration failed"
