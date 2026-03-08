@@ -1,6 +1,8 @@
 # WhatsApp-n8n Bridge Service
 
-A Docker-containerized service that bridges WhatsApp (via Baileys) with n8n workflows. Send and receive WhatsApp messages (text, audio, images) through REST APIs and a custom n8n node.
+A lightweight Docker-containerized service that bridges WhatsApp (via whatsapp-web.js) with n8n workflows. Send and receive WhatsApp messages through REST APIs and a custom n8n node.
+
+**Uses:** Direct whatsapp-web.js integration for simplicity and reliability
 
 ## Overview
 
@@ -15,13 +17,25 @@ This service enables:
 ## Quick Start
 
 ### Prerequisites
-- Docker & docker compose (v2)
-- Node.js 20+ (for local development)
-- MySQL 8.0+
-- Redis 7.0+
-- n8n instance (for webhook integration)
+
+**Docker Containers (Required):**
+- This service runs in Docker and requires:
+  - **Node.js 20+** base image
+  - **Chromium/Puppeteer** (for whatsapp-web.js browser automation)
+  - **Docker Compose v2** for orchestration
+
+**Services:**
+- **MySQL 8.0+** - Message storage and execution logs
+- **Redis 7.0+** - Session management and message queue
+- **n8n** - Workflow automation (for integration)
+
+**Local Development:**
+- Node.js 20+ (to run outside Docker)
+- Docker & Docker Compose (to run the full stack)
 
 ### Setup
+
+#### Option 1: Docker Compose (Recommended)
 
 1. **Clone the repository**
    ```bash
@@ -29,26 +43,64 @@ This service enables:
    cd whatsapp-n8n-bridge
    ```
 
-2. **Copy environment file**
+2. **Configure environment**
    ```bash
    cp .env.example .env
-   # Edit .env with your configuration
+   # Edit .env with your settings (API_KEY, DB credentials, etc.)
    ```
 
-3. **Start with Docker**
+3. **Start all services**
    ```bash
    docker compose up -d
    ```
 
-4. **Authenticate WhatsApp**
-   - Get QR code: `curl http://localhost:3000/api/qr`
-   - Scan with WhatsApp app
-   - Service will automatically save session
+   This starts:
+   - ✅ WhatsApp Bridge (port 4000) - Node.js with whatsapp-web.js
+   - ✅ MySQL (port 3306) - Message storage
+   - ✅ Redis (port 6379) - Session & queue
 
-5. **Verify health**
+4. **Authenticate WhatsApp**
    ```bash
-   curl http://localhost:3000/health
+   # Get QR code
+   curl http://localhost:4000/api/whatsapp/qr
+
+   # Scan with your WhatsApp app
+   # Service saves session automatically in Redis
    ```
+
+5. **Verify service is running**
+   ```bash
+   curl http://localhost:4000/health
+   ```
+
+#### Option 2: Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Set DB_HOST=localhost, REDIS_HOST=localhost
+
+# Start development server
+npm run dev
+
+# Service runs on http://localhost:4000
+```
+
+### Docker Requirements
+
+The Docker image includes:
+- **Node.js 20** runtime
+- **Chromium/Puppeteer** for whatsapp-web.js browser automation
+- **Chrome sandbox disabled** for container compatibility
+- All dependencies pre-installed
+
+**Minimum Docker specs:**
+- RAM: 512MB (1GB recommended)
+- CPU: 1 core (2+ cores recommended)
+- Disk: 500MB free space
 
 ## Documentation
 
@@ -144,7 +196,7 @@ See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues.
 
 ## License
 
-Private repository
+MIT License - See LICENSE file for details
 
 ## Support
 
@@ -152,6 +204,26 @@ For issues, questions, or contributions, contact the development team.
 
 ---
 
-**Status:** In Development
-**Current Phase:** 0 - Planning & Setup
-**Last Updated:** 2026-03-07
+**Status:** Active Development
+**Latest Version:** 1.0.0 (whatsapp-web.js migration)
+**Last Updated:** 2026-03-08
+
+## n8n Integration
+
+To use this service with n8n:
+
+1. **Install the n8n node package:**
+   ```bash
+   npm install n8n-nodes-whatsapp-bridge-xyz@latest
+   ```
+
+2. **Configure credentials in n8n:**
+   - Node: WhatsApp Bridge API
+   - Base URL: `http://localhost:4000`
+   - API Key: (leave empty - not required)
+
+3. **Use in workflows:**
+   - **WhatsApp Bridge** node: Send messages
+   - **WhatsApp Bridge Trigger** node: Receive webhooks
+
+See [n8n-nodes-whatsapp-bridge-xyz](https://www.npmjs.com/package/n8n-nodes-whatsapp-bridge-xyz) on npm
