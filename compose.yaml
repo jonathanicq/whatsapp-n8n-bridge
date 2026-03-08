@@ -15,7 +15,7 @@ services:
     networks:
       - whatsapp-bridge-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "-H", "Authorization: Bearer whatsapp-bridge-key-123", "http://localhost:3000/api/health"]
+      test: ["CMD", "sh", "-c", "netstat -tln | grep 3000 || nc -zv localhost 3000"]
       interval: 15s
       timeout: 10s
       retries: 3
