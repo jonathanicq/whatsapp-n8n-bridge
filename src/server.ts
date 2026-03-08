@@ -179,9 +179,39 @@ app.get("/qr", (_req: Request, res: Response) => {
 app.get("/qr.html", (_req: Request, res: Response) => {
   const qr = client.getQR();
   if (!qr) {
-    return res.status(400).json({
-      error: "No QR code available.",
-    });
+    return res.status(400).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>lightWaha - QR Code</title>
+        <style>
+          body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+          }
+          .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>❌ No QR Code Available</h1>
+          <p>The WhatsApp session is already authenticated or not initialized.</p>
+          <p><a href="/status">Check Status</a></p>
+        </div>
+      </body>
+      </html>
+    `);
   }
 
   const html = `
@@ -189,69 +219,117 @@ app.get("/qr.html", (_req: Request, res: Response) => {
     <html>
     <head>
       <title>lightWaha - QR Code</title>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
         body {
           display: flex;
           justify-content: center;
           align-items: center;
-          height: 100vh;
-          margin: 0;
-          background: #f0f0f0;
-          font-family: Arial, sans-serif;
+          min-height: 100vh;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
         .container {
           text-align: center;
           background: white;
-          padding: 40px;
-          border-radius: 10px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          padding: 50px;
+          border-radius: 15px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+          max-width: 500px;
+          width: 90%;
         }
         h1 {
           color: #333;
-          margin-top: 0;
+          margin-bottom: 10px;
+          font-size: 28px;
+        }
+        .subtitle {
+          color: #666;
+          margin-bottom: 30px;
+          font-size: 14px;
         }
         .qr-container {
           margin: 30px 0;
+          background: #f9f9f9;
+          padding: 20px;
+          border-radius: 10px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
-        canvas {
-          border: 2px solid #ddd;
-          padding: 10px;
+        img {
+          max-width: 100%;
+          height: auto;
+          display: block;
         }
-        .instruction {
+        .instructions {
+          background: #f0f8ff;
+          border-left: 4px solid #667eea;
+          padding: 20px;
+          margin: 20px 0;
+          text-align: left;
+          border-radius: 5px;
+        }
+        .instructions h3 {
+          color: #333;
+          margin-bottom: 10px;
+          font-size: 16px;
+        }
+        .instructions ol {
+          margin-left: 20px;
           color: #666;
-          font-size: 14px;
+          line-height: 1.8;
+        }
+        .instructions li {
+          margin-bottom: 8px;
+        }
+        .status {
+          color: #999;
+          font-size: 12px;
           margin-top: 20px;
+          padding-top: 20px;
+          border-top: 1px solid #eee;
         }
       </style>
     </head>
     <body>
       <div class="container">
-        <h1>📱 lightWaha - WhatsApp QR Code</h1>
+        <h1>📱 lightWaha</h1>
+        <p class="subtitle">WhatsApp Web.js Integration</p>
+
         <div class="qr-container">
-          <p style="color: #666; font-size: 12px;">Generating QR Code...</p>
-          <canvas id="qrCanvas"></canvas>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(qr)}"
+               alt="WhatsApp QR Code"
+               title="Scan with WhatsApp">
         </div>
-        <p class="instruction">
-          Scan this QR code with WhatsApp to authenticate<br>
-          <strong>Settings > Linked Devices > Link a device</strong>
-        </p>
+
+        <div class="instructions">
+          <h3>How to authenticate:</h3>
+          <ol>
+            <li>Open <strong>WhatsApp</strong> on your mobile device</li>
+            <li>Go to <strong>Settings</strong></li>
+            <li>Select <strong>Linked Devices</strong></li>
+            <li>Tap <strong>Link a device</strong></li>
+            <li>Point your camera at the QR code above</li>
+          </ol>
+        </div>
+
+        <div class="status">
+          <p>Server: lightWaha v1.0</p>
+          <p><a href="/status" style="color: #667eea; text-decoration: none;">Check Connection Status</a></p>
+        </div>
       </div>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-      <script>
-        const qrData = "${qr}";
-        new QRCode(document.getElementById("qrCanvas"), {
-          text: qrData,
-          width: 300,
-          height: 300,
-          colorDark: "#000000",
-          colorLight: "#ffffff"
-        });
-      </script>
     </body>
     </html>
   `;
 
-  res.setHeader("Content-Type", "text/html");
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
   return res.send(html);
 });
 
