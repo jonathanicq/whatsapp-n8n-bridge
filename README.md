@@ -1,53 +1,92 @@
-# lightWaha - Lightweight WhatsApp HTTP Bridge
+# lightWaha - WhatsApp REST API Bridge
 
-A simplified, lightweight WhatsApp integration service using direct `whatsapp-web.js` integration instead of complex REST API wrappers. Provides clean REST API, direct MySQL/Redis storage, and easy n8n workflow integration.
+**A lightweight, production-ready WhatsApp integration service**
 
-## Features
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Node](https://img.shields.io/badge/node-20%2B-green)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Docker](https://img.shields.io/badge/docker-ready-blue)
 
-✅ **Simple Architecture**
-- Direct whatsapp-web.js integration (no WAHA wrapper)
-- Single Node.js process
-- 3 containers (app + MySQL + Redis)
+---
 
-✅ **REST API**
-- Send/receive messages
-- Get connection status
-- Manage authentication
-- Check message queue
+## 🚀 Overview
 
-✅ **Persistent Storage**
-- MySQL for message history
-- Redis for message queue & session state
-- Exponential backoff retry logic
+**lightWaha** is an Express.js REST API service that bridges WhatsApp Web to HTTP, enabling:
 
-✅ **n8n Integration**
-- Webhook support
-- Easy API integration
-- Automated workflows
+✅ **Send messages** - Via REST API (`POST /send`)
+✅ **Receive messages** - Poll or webhook (`GET /messages/new`)
+✅ **Message history** - Access all messages (`GET /messages`)
+✅ **Real WhatsApp** - Uses whatsapp-web.js with Chromium
+✅ **Docker-ready** - Full containerization with Docker Compose
+✅ **Full API docs** - Interactive Swagger UI at `/api-docs`
 
-✅ **Production Ready**
-- Docker Compose deployment
-- Health checks
-- Centralized logging
-- Error handling
+---
 
-## Quick Start
+## 📋 Features
 
-### Prerequisites
-- Node.js 20+
-- Docker & Docker Compose
-- MySQL 8.0
-- Redis 7.0
+### Phase 1: Core WhatsApp Integration ✅
+- **Express.js REST API** with 10 endpoints
+- **Real WhatsApp client** via whatsapp-web.js
+- **QR code authentication** with visual display
+- **Message sending** - Send to any WhatsApp number
+- **Event-driven** - Captures incoming messages
+- **Session persistence** - Stays authenticated across restarts
+- **Docker containerization** - Production-ready deployment
+
+### Phase 2: Message Polling ✅
+- **`GET /messages/new`** - Poll for new messages
+- **`GET /messages`** - Access message history
+- **`GET /messages/stats`** - Monitor queue health
+- **Cursor-based pagination** - No gaps or duplicates
+- **In-memory queue** - 1000 message capacity
+- **Timestamp tracking** - Know when each message arrived
+
+### Phase 3/4: Webhook Delivery (Planned 🔜)
+- Real-time message delivery via webhook
+- Webhook configuration API
+- Retry logic with exponential backoff
+- Full backwards compatibility with polling
+
+---
+
+## ⚡ Quick Start
+
+### With Docker (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/jonathanicq/whatsapp-n8n-bridge.git
+cd whatsapp-n8n-bridge
+
+# Build and run
+docker compose build
+docker compose up -d
+
+# Verify it's running
+curl http://localhost:4000/health
+# Response: {"status":"ok"}
+
+# Access the QR code page
+open http://localhost:4000/qr.html
+# Scan with WhatsApp Linked Devices to authenticate
+```
 
 ### Local Development
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/jonathanicq/lightWaha.git
-cd lightWaha
-
-# 2. Install dependencies
+# Install dependencies
 npm install
+
+# Build TypeScript
+npm run build
+
+# Run development server
+npm run dev
+
+# Server on http://localhost:4000
+```
+
+**See [SETUP.md](SETUP.md) for detailed installation & configuration.**
 
 # 3. Configure environment
 cp .env.example .env
