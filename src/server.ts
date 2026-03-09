@@ -255,12 +255,22 @@ class RealWhatsAppClient {
       let senderPhoneNumber = convertedFrom;
       try {
         const contact = await this.client?.getContactById(msg.from);
-        if (contact && (contact as any).number) {
-          senderPhoneNumber = `+${(contact as any).number}`;
-          console.log(`[CONTACT] Found actual phone number: ${senderPhoneNumber}`);
+        console.log(`[CONTACT-DEBUG] Contact object:`, contact);
+        console.log(`[CONTACT-DEBUG] Contact number field:`, (contact as any)?.number);
+
+        if (contact) {
+          const phoneNumber = (contact as any).number || (contact as any).id?.user;
+          if (phoneNumber) {
+            senderPhoneNumber = `+${phoneNumber}`;
+            console.log(`[CONTACT] Found actual phone number: ${senderPhoneNumber}`);
+          } else {
+            console.log(`[CONTACT] Contact found but no number field available`);
+          }
+        } else {
+          console.log(`[CONTACT] Contact lookup returned null/undefined`);
         }
       } catch (error) {
-        console.log(`[CONTACT] Could not fetch contact, using JID conversion: ${convertedFrom}`);
+        console.log(`[CONTACT] Error fetching contact:`, (error as Error).message);
       }
 
       const storedMessage: StoredMessage = {
