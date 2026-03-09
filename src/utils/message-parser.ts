@@ -19,7 +19,13 @@ export function parseMessage(baileysMesage: Record<string, unknown>): ParsedMess
       return null;
     }
 
-    const sender = convertJIDToPhoneNumber(key.remoteJid as string);
+    const rawRemoteJid = key.remoteJid as string;
+    logDebug("Raw message received", {
+      remoteJid: rawRemoteJid,
+      fullKey: JSON.stringify(key),
+    });
+
+    const sender = convertJIDToPhoneNumber(rawRemoteJid);
     const messageId = (key.id as string) || uuidv4();
     const timestamp = (baileysMesage.messageTimestamp as number) || Date.now();
     const isGroup = (key.remoteJid as string)?.endsWith("@g.us") || false;
