@@ -5,6 +5,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { MessageType, ParsedMessage, WhatsAppMessage } from "../models/whatsapp-message";
 import { logDebug } from "../config/logger";
+import { convertJIDToPhoneNumber } from "./jid-converter";
 
 /**
  * Parse Baileys message into standard format
@@ -18,7 +19,7 @@ export function parseMessage(baileysMesage: Record<string, unknown>): ParsedMess
       return null;
     }
 
-    const sender = (key.remoteJid as string)?.split("@")[0] || "unknown";
+    const sender = convertJIDToPhoneNumber(key.remoteJid as string);
     const messageId = (key.id as string) || uuidv4();
     const timestamp = (baileysMesage.messageTimestamp as number) || Date.now();
     const isGroup = (key.remoteJid as string)?.endsWith("@g.us") || false;

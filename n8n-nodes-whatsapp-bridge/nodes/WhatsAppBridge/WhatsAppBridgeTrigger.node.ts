@@ -11,6 +11,16 @@ import {
 import { createHmac } from 'crypto';
 import { whatsappBridgeApiRequest } from './GenericFunctions';
 
+/**
+ * Convert WhatsApp JID to international phone number format
+ */
+function convertJIDToPhoneNumber(jid: string | null | undefined): string {
+	if (!jid) return 'unknown';
+	if (jid.startsWith('+')) return jid;
+	const phoneNumber = jid.includes('@') ? jid.split('@')[0] : jid;
+	return `+${phoneNumber}`;
+}
+
 export class WhatsAppBridgeTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'WhatsApp Bridge Trigger',
@@ -128,7 +138,17 @@ export class WhatsAppBridgeTrigger implements INodeType {
 
 		// If signature is valid, return the message data
 		const body = req.body as IDataObject;
-		const messageData = (body.data || body) as IDataObject;
+		let messageData = (body.data || body) as IDataObject;
+
+		// Convert JID format to phone number if 'from' field exists
+		if (messageData.from && typeof messageData.from === 'string') {
+			const originalFrom = messageData.from;
+			messageData = {
+				...messageData,
+				from: convertJIDToPhoneNumber(originalFrom),
+				fromJID: originalFrom, // Store original JID for reference
+			};
+		}
 
 		const returnData: INodeExecutionData = {
 			json: messageData,
