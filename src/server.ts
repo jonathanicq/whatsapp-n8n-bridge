@@ -251,9 +251,21 @@ class RealWhatsAppClient {
 
       console.log(`${'='.repeat(80)}\n`);
 
+      // Try to get the actual phone number from contact
+      let senderPhoneNumber = convertedFrom;
+      try {
+        const contact = await this.client?.getContactById(msg.from);
+        if (contact && (contact as any).number) {
+          senderPhoneNumber = `+${(contact as any).number}`;
+          console.log(`[CONTACT] Found actual phone number: ${senderPhoneNumber}`);
+        }
+      } catch (error) {
+        console.log(`[CONTACT] Could not fetch contact, using JID conversion: ${convertedFrom}`);
+      }
+
       const storedMessage: StoredMessage = {
         id: msg.id._serialized,
-        from: convertedFrom,  // Store converted phone number
+        from: senderPhoneNumber,  // Store actual phone number from contact
         fromName: msg.author || "Unknown",
         body: msg.body,
         timestamp: msg.timestamp * 1000, // Convert to milliseconds
@@ -263,7 +275,7 @@ class RealWhatsAppClient {
       // Store message in queue
       this.messageQueue.addMessage(storedMessage);
 
-      console.log(`[MSG] ${convertedFrom}: ${msg.body}`);
+      console.log(`[MSG] ${senderPhoneNumber}: ${msg.body}`);
     });
 
     // Disconnected event
