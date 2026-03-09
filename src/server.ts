@@ -8,6 +8,16 @@ import { MessageQueue, StoredMessage } from "./messageQueue";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const qrcode = require("qrcode-terminal");
 
+/**
+ * Convert WhatsApp JID to international phone number format
+ */
+function convertJIDToPhoneNumber(jid: string): string {
+  if (!jid) return "unknown";
+  if (jid.startsWith("+")) return jid;
+  const phoneNumber = jid.includes("@") ? jid.split("@")[0] : jid;
+  return `+${phoneNumber}`;
+}
+
 dotenv.config();
 
 const app = express();
@@ -129,9 +139,17 @@ class RealWhatsAppClient {
 
     // Incoming message event
     this.client.on("message", (msg: WAMessage) => {
+      // Log raw message for debugging
+      console.log(`[DEBUG-RAW] msg.from: ${msg.from}, msg.id: ${msg.id._serialized}`);
+
+      const rawFrom = msg.from;
+      const convertedFrom = convertJIDToPhoneNumber(rawFrom);
+
+      console.log(`[DEBUG-CONVERT] Raw: ${rawFrom} → Converted: ${convertedFrom}`);
+
       const storedMessage: StoredMessage = {
         id: msg.id._serialized,
-        from: msg.from,
+        from: convertedFrom,  // Store converted phone number
         fromName: msg.author || "Unknown",
         body: msg.body,
         timestamp: msg.timestamp * 1000, // Convert to milliseconds
@@ -141,7 +159,7 @@ class RealWhatsAppClient {
       // Store message in queue
       this.messageQueue.addMessage(storedMessage);
 
-      console.log(`[MSG] ${msg.from}: ${msg.body}`);
+      console.log(`[MSG] ${convertedFrom}: ${msg.body}`);
     });
 
     // Disconnected event
