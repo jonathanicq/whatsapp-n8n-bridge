@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] - 2026-03-09
+
+### Summary
+**lightWaha Phase 1 & 2 - COMPLETE & PRODUCTION READY**
+- Full WhatsApp REST API bridge implementation
+- Real-time message sending and receiving
+- Message polling with cursor-based pagination
+- Docker deployment ready
+- All endpoints tested and verified working
+
+### Added
+- Simplified sender phone number extraction (Phase 3 improvement)
+  - Direct pattern matching: `msg.from.replace('@c.us', '')`
+  - Handles both standard contacts and linked device formats
+  - Optional contact info enhancement for verification
+  - Cleaner, more maintainable code
+
+- Package lock file included for consistent Docker builds
+  - Ensures reproducible builds across environments
+  - Fixed Docker build failures
+
 ## [Unreleased]
 
 ### Added
