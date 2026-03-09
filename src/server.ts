@@ -207,7 +207,11 @@ class RealWhatsAppClient {
         console.log("No contact object available");
       }
 
-      // Try to get chat/contact from client
+      // Try to extract phone number (default from JID)
+      const rawFrom = msg.from;
+      const convertedFrom = convertJIDToPhoneNumber(rawFrom);
+      let senderPhoneNumber = convertedFrom;
+
       console.log(`\nAttempting to fetch contact and chat info:`);
       try {
         const chat = await msg.getChat();
@@ -232,6 +236,13 @@ class RealWhatsAppClient {
             pushname: contact.pushname,
             shortName: (contact as any).shortName,
           });
+
+          // Extract actual phone number from contact
+          const contactNumber = (contact as any).number || (contact as any).id?.user;
+          if (contactNumber) {
+            senderPhoneNumber = `+${contactNumber}`;
+            console.log(`[CONTACT] Extracted phone number from contact: ${senderPhoneNumber}`);
+          }
         } else {
           console.log(`No contact found for: ${msg.from}`);
         }
@@ -244,34 +255,10 @@ class RealWhatsAppClient {
       console.log(`  from JID: ${msg.from}`);
       console.log(`  _data.notifyName: ${(msg as any)._data?.notifyName || 'N/A'}`);
       console.log(`  _data.from: ${(msg as any)._data?.from || 'N/A'}`);
-
-      const rawFrom = msg.from;
-      const convertedFrom = convertJIDToPhoneNumber(rawFrom);
       console.log(`  Conversion result: ${rawFrom} → ${convertedFrom}`);
+      console.log(`  Final sender phone number: ${senderPhoneNumber}`);
 
       console.log(`${'='.repeat(80)}\n`);
-
-      // Try to get the actual phone number from contact
-      let senderPhoneNumber = convertedFrom;
-      try {
-        const contact = await this.client?.getContactById(msg.from);
-        console.log(`[CONTACT-DEBUG] Contact object:`, contact);
-        console.log(`[CONTACT-DEBUG] Contact number field:`, (contact as any)?.number);
-
-        if (contact) {
-          const phoneNumber = (contact as any).number || (contact as any).id?.user;
-          if (phoneNumber) {
-            senderPhoneNumber = `+${phoneNumber}`;
-            console.log(`[CONTACT] Found actual phone number: ${senderPhoneNumber}`);
-          } else {
-            console.log(`[CONTACT] Contact found but no number field available`);
-          }
-        } else {
-          console.log(`[CONTACT] Contact lookup returned null/undefined`);
-        }
-      } catch (error) {
-        console.log(`[CONTACT] Error fetching contact:`, (error as Error).message);
-      }
 
       const storedMessage: StoredMessage = {
         id: msg.id._serialized,
