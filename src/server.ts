@@ -139,13 +139,79 @@ class RealWhatsAppClient {
 
     // Incoming message event
     this.client.on("message", (msg: WAMessage) => {
-      // Log raw message for debugging
-      console.log(`[DEBUG-RAW] msg.from: ${msg.from}, msg.id: ${msg.id._serialized}`);
+      // Dump ALL available information from the message object
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`ALL MESSAGE PROPERTIES:`);
+      console.log(`${'='.repeat(80)}`);
+
+      // Main properties
+      const mainProps = {
+        from: msg.from,
+        to: (msg as any).to,
+        author: msg.author,
+        body: msg.body,
+        fromMe: msg.fromMe,
+        type: msg.type,
+        timestamp: msg.timestamp,
+        id: msg.id,
+        ack: (msg as any).ack,
+        hasMedia: msg.hasMedia,
+        mediaKey: (msg as any).mediaKey,
+        isStatus: (msg as any).isStatus,
+        isForwarded: (msg as any).isForwarded,
+        isEmojiReaction: (msg as any).isEmojiReaction,
+        isReply: (msg as any).isReply,
+        isGroupMsg: msg.isGroupMsg,
+        mentionedIds: (msg as any).mentionedIds,
+        groupNotification: (msg as any).groupNotification,
+      };
+
+      console.log(JSON.stringify(mainProps, null, 2));
+
+      // Hidden properties in _data
+      console.log(`\n_data properties (raw sender info):`);
+      const dataProps = (msg as any)._data;
+      if (dataProps) {
+        console.log(JSON.stringify({
+          notifyName: dataProps.notifyName,
+          pushname: dataProps.pushname,
+          senderName: dataProps.senderName,
+          from: dataProps.from,
+          to: dataProps.to,
+          id: dataProps.id,
+          t: dataProps.t,
+          type: dataProps.type,
+          caption: dataProps.caption,
+        }, null, 2));
+      }
+
+      // Contact object
+      console.log(`\nContact properties:`);
+      const contactProps = (msg as any).contact;
+      if (contactProps) {
+        console.log(JSON.stringify({
+          id: contactProps.id,
+          name: contactProps.name,
+          number: contactProps.number,
+          pushname: contactProps.pushname,
+          isBusiness: contactProps.isBusiness,
+          isWAContact: contactProps.isWAContact,
+        }, null, 2));
+      } else {
+        console.log("No contact object available");
+      }
+
+      // Try to extract phone number
+      console.log(`\nPhone number extraction attempts:`);
+      console.log(`  from JID: ${msg.from}`);
+      console.log(`  _data.notifyName: ${(msg as any)._data?.notifyName || 'N/A'}`);
+      console.log(`  _data.from: ${(msg as any)._data?.from || 'N/A'}`);
 
       const rawFrom = msg.from;
       const convertedFrom = convertJIDToPhoneNumber(rawFrom);
+      console.log(`  Conversion result: ${rawFrom} → ${convertedFrom}`);
 
-      console.log(`[DEBUG-CONVERT] Raw: ${rawFrom} → Converted: ${convertedFrom}`);
+      console.log(`${'='.repeat(80)}\n`);
 
       const storedMessage: StoredMessage = {
         id: msg.id._serialized,
