@@ -161,7 +161,7 @@ class RealWhatsAppClient {
         isForwarded: (msg as any).isForwarded,
         isEmojiReaction: (msg as any).isEmojiReaction,
         isReply: (msg as any).isReply,
-        isGroupMsg: msg.isGroupMsg,
+        isGroupMsg: (msg as any).isGroupMsg,
         mentionedIds: (msg as any).mentionedIds,
         groupNotification: (msg as any).groupNotification,
       };
