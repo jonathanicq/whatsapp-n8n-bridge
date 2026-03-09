@@ -8,15 +8,6 @@ import { MessageQueue, StoredMessage } from "./messageQueue";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const qrcode = require("qrcode-terminal");
 
-/**
- * Convert WhatsApp JID to international phone number format
- */
-function convertJIDToPhoneNumber(jid: string): string {
-  if (!jid) return "unknown";
-  if (jid.startsWith("+")) return jid;
-  const phoneNumber = jid.includes("@") ? jid.split("@")[0] : jid;
-  return `+${phoneNumber}`;
-}
 
 dotenv.config();
 
@@ -207,57 +198,43 @@ class RealWhatsAppClient {
         console.log("No contact object available");
       }
 
-      // Try to extract phone number (default from JID)
-      const rawFrom = msg.from;
-      const convertedFrom = convertJIDToPhoneNumber(rawFrom);
-      let senderPhoneNumber = convertedFrom;
+      // Extract sender phone number from message
+      // First, try simple pattern: remove @c.us suffix if present
+      let senderPhoneNumber = msg.from.replace('@c.us', '');
 
-      console.log(`\nAttempting to fetch contact and chat info:`);
-      try {
-        const chat = await msg.getChat();
-        console.log(`Chat info:`, {
-          name: chat.name,
-          id: chat.id,
-          isGroup: chat.isGroup,
-          isReadOnly: chat.isReadOnly,
-          archived: chat.archived,
-          muteExpiration: chat.muteExpiration,
-        });
-
-        // Try to get contact from the message's source
-        const contact = await this.client?.getContactById(msg.from);
-        if (contact) {
-          console.log(`Contact info:`, {
-            id: contact.id,
-            name: contact.name,
-            number: contact.number,
-            isBusiness: contact.isBusiness,
-            isWAContact: contact.isWAContact,
-            pushname: contact.pushname,
-            shortName: (contact as any).shortName,
-          });
-
-          // Extract actual phone number from contact
-          const contactNumber = (contact as any).number || (contact as any).id?.user;
-          if (contactNumber) {
-            senderPhoneNumber = `+${contactNumber}`;
-            console.log(`[CONTACT] Extracted phone number from contact: ${senderPhoneNumber}`);
-          }
-        } else {
-          console.log(`No contact found for: ${msg.from}`);
-        }
-      } catch (error) {
-        console.log(`Error fetching contact/chat:`, (error as Error).message);
+      // If still contains @, try to extract number part (for other formats like @lid)
+      if (senderPhoneNumber.includes('@')) {
+        senderPhoneNumber = senderPhoneNumber.split('@')[0];
       }
 
-      // Try to extract phone number
-      console.log(`\nPhone number extraction attempts:`);
-      console.log(`  from JID: ${msg.from}`);
-      console.log(`  _data.notifyName: ${(msg as any)._data?.notifyName || 'N/A'}`);
-      console.log(`  _data.from: ${(msg as any)._data?.from || 'N/A'}`);
-      console.log(`  Conversion result: ${rawFrom} → ${convertedFrom}`);
-      console.log(`  Final sender phone number: ${senderPhoneNumber}`);
+      // Ensure it has + prefix
+      if (!senderPhoneNumber.startsWith('+')) {
+        senderPhoneNumber = `+${senderPhoneNumber}`;
+      }
 
+      console.log(`\nSender extraction:`);
+      console.log(`  Raw from: ${msg.from}`);
+      console.log(`  Extracted: ${senderPhoneNumber}`);
+
+      // Try to get additional context from contact (optional enhancement)
+      try {
+        const contact = await this.client?.getContactById(msg.from);
+        if (contact && (contact as any).number) {
+          const contactNumber = (contact as any).number;
+          const contactPhoneNumber = contactNumber.startsWith('+') ? contactNumber : `+${contactNumber}`;
+          console.log(`  Contact number: ${contactPhoneNumber}`);
+          // Use contact number if available (may be more reliable)
+          if (contactPhoneNumber !== senderPhoneNumber) {
+            console.log(`  [INFO] Using contact number instead of extracted: ${contactPhoneNumber}`);
+            senderPhoneNumber = contactPhoneNumber;
+          }
+        }
+      } catch (error) {
+        // Contact lookup is optional, continue with extracted number
+        console.log(`  Contact lookup skipped: ${(error as Error).message}`);
+      }
+
+      console.log(`  Final: ${senderPhoneNumber}`);
       console.log(`${'='.repeat(80)}\n`);
 
       const storedMessage: StoredMessage = {
