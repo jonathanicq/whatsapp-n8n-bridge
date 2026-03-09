@@ -138,7 +138,7 @@ class RealWhatsAppClient {
     });
 
     // Incoming message event
-    this.client.on("message", (msg: WAMessage) => {
+    this.client.on("message", async (msg: WAMessage) => {
       // Dump ALL available information from the message object
       console.log(`\n${'='.repeat(80)}`);
       console.log(`ALL MESSAGE PROPERTIES:`);
@@ -182,6 +182,12 @@ class RealWhatsAppClient {
           t: dataProps.t,
           type: dataProps.type,
           caption: dataProps.caption,
+          ...Object.keys(dataProps).reduce((acc, key) => {
+            if (!acc.hasOwnProperty(key) && typeof dataProps[key] === 'string') {
+              acc[key] = dataProps[key];
+            }
+            return acc;
+          }, {} as any),
         }, null, 2));
       }
 
@@ -199,6 +205,38 @@ class RealWhatsAppClient {
         }, null, 2));
       } else {
         console.log("No contact object available");
+      }
+
+      // Try to get chat/contact from client
+      console.log(`\nAttempting to fetch contact and chat info:`);
+      try {
+        const chat = await msg.getChat();
+        console.log(`Chat info:`, {
+          name: chat.name,
+          id: chat.id,
+          isGroup: chat.isGroup,
+          isReadOnly: chat.isReadOnly,
+          archived: chat.archived,
+          muteExpiration: chat.muteExpiration,
+        });
+
+        // Try to get contact from the message's source
+        const contact = await this.client?.getContactById(msg.from);
+        if (contact) {
+          console.log(`Contact info:`, {
+            id: contact.id,
+            name: contact.name,
+            number: contact.number,
+            isBusiness: contact.isBusiness,
+            isWAContact: contact.isWAContact,
+            pushname: contact.pushname,
+            shortName: (contact as any).shortName,
+          });
+        } else {
+          console.log(`No contact found for: ${msg.from}`);
+        }
+      } catch (error) {
+        console.log(`Error fetching contact/chat:`, (error as Error).message);
       }
 
       // Try to extract phone number
